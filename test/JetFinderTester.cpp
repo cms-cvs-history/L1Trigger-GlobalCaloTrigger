@@ -72,16 +72,23 @@ int main(int argc, char **argv)
 
     // Test the getInputRegion method
     outputRegions = myJetFinder.getInputRegions();
-    for(int i = 0; i < maxRegions; ++i)
+    if(outputRegions.size() == 0)  
     {
-        if(outputRegions[i].getEt() != inputRegions[i].getEt()) { testPass = false; break; }
-        if(outputRegions[i].getMip() != inputRegions[i].getMip()) { testPass = false; break; }
-        if(outputRegions[i].getQuiet() != inputRegions[i].getQuiet()) {testPass = false; break; }
+        testPass = false;
     }
-    
+    else
+    {
+        for(int i = 0; i < maxRegions; ++i)
+        {
+            if(outputRegions[i].getEt() != inputRegions[i].getEt()) { testPass = false; break; }
+            if(outputRegions[i].getMip() != inputRegions[i].getMip()) { testPass = false; break; }
+            if(outputRegions[i].getQuiet() != inputRegions[i].getQuiet()) {testPass = false; break; }
+        }
+    }
+        
     if(testPass == false)
     {
-        cout << "\nTest class has failed initial data input/output!" << endl;
+        cout << "\nTest class has failed initial data input/output comparison!" << endl;
         return 0;
     }
     
