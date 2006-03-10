@@ -33,14 +33,16 @@ typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
 /// Loads test input regions and also the known results from a text file.
-bool loadTestData(RegionsVector& regions, JetsVector& jets, ifstream &fin, const string &fileName);
+bool loadTestData(RegionsVector& regions, JetsVector& jets, const string &fileName);
 /// Function to safely open files of any name, using a referenced return ifstream
 bool safeOpenFile(ifstream &fin, const string &name);
 
 /// Start of unit test code
 int main(int argc, char **argv)
 {
-    cout << "\nL1GctJetFinder class unit tester." << endl;
+    cout << "\n*********************************" << endl;
+    cout << "L1GctJetFinder class unit tester." << endl;
+    cout << "*********************************" << endl;
 
     L1GctJetFinder myJetFinder; //TEST OBJECT;    
     bool testPass = true;       //Test passing flag.
@@ -51,9 +53,6 @@ int main(int argc, char **argv)
     // Name of the file containing the test input data.
     const string testDataFile = "JetFinderTesterData.txt";  
     
-    // File input stream
-    ifstream fin;
-    
     // Vectors for reading in test data from the text file.
     RegionsVector inputRegions(maxRegions);
     JetsVector correctJets;
@@ -62,7 +61,7 @@ int main(int argc, char **argv)
     JetsVector outputJets;
     
     // Load our test input data and known results
-    if(!loadTestData(inputRegions, correctJets, fin, testDataFile)) { return 0; }
+    if(!loadTestData(inputRegions, correctJets, testDataFile)) { return 0; }
     
     //Fill the L1GctJetFinder with regions.
     for(int i = 0; i < maxRegions; ++i)
@@ -72,7 +71,7 @@ int main(int argc, char **argv)
 
     // Test the getInputRegion method
     outputRegions = myJetFinder.getInputRegions();
-    if(outputRegions.size() == 0)  
+    if(outputRegions.size() != inputRegions.size())  
     {
         testPass = false;
     }
@@ -112,15 +111,18 @@ int main(int argc, char **argv)
 
 
 // Loads test input regions from a text file.
-bool loadTestData(RegionsVector& regions, JetsVector& jets, ifstream &fin, const string &fileName)
+bool loadTestData(RegionsVector& regions, JetsVector& jets, const string &fileName)
 {
+    // File input stream
+    ifstream fin;
+    
     if(!safeOpenFile(fin, fileName)) {return false;}  //open the file or fail gracefully
     
     unsigned long int tempEt = 0;
-    unsigned short int tempMip = false;
-    unsigned short int tempQuiet = false;
+    unsigned short int tempMip = 0;
+    unsigned short int tempQuiet = 0;
     
-    //loads the input data
+    // Loads the input data
     for(unsigned int i = 0; i < regions.size(); ++i)
     {
         //read in the data from the file
@@ -133,8 +135,10 @@ bool loadTestData(RegionsVector& regions, JetsVector& jets, ifstream &fin, const
         if(tempQuiet == 0) { regions[i].setQuiet(false); } else { regions[i].setQuiet(true); }
     }
     
-    //do similar to load the 'known' output jets (that we currently don't know...)
+    // Do similar to load the 'known' output jets (that we currently don't know...)
     
+    // Close the file
+    fin.close();    
         
     return true;
 }
