@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <exception> //for exception handling
+#include <stdexcept> //for std::runtime_error()
 using namespace std;
 
 //Typedefs for the vector templates used
@@ -32,18 +34,38 @@ typedef vector<L1GctRegion> RegionsVector;
 typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
+/// Runs the test, and returns a string with the test result message in.
+string classTest();
 /// Loads test input regions and also the known results from a text file.
-bool loadTestData(RegionsVector& regions, JetsVector& jets, const string &fileName);
+void loadTestData(RegionsVector &regions, JetsVector &jets, const string &fileName);
 /// Function to safely open files of any name, using a referenced return ifstream
-bool safeOpenFile(ifstream &fin, const string &name);
+void safeOpenFile(ifstream &fin, const string &name);
 
-/// Start of unit test code
+/// Entrypoint of unit test code + error handling
 int main(int argc, char **argv)
 {
     cout << "\n*********************************" << endl;
     cout << "L1GctJetFinder class unit tester." << endl;
     cout << "*********************************" << endl;
 
+    try
+    {
+        cout << "\n" << classTest() << endl;
+    }
+    catch(const exception &e)
+    {
+        cerr << "\nError! " << e.what() << endl;
+    }
+    catch(...)
+    {
+        cerr << "\nError! An unknown exception has occurred!" << endl;
+    }
+    return 0;   
+}
+
+// Runs the test, and returns a string with the test result message in.
+string classTest()
+{
     L1GctJetFinder myJetFinder; //TEST OBJECT;    
     bool testPass = true;       //Test passing flag.
     
@@ -61,7 +83,7 @@ int main(int argc, char **argv)
     JetsVector outputJets;
     
     // Load our test input data and known results
-    if(!loadTestData(inputRegions, correctJets, testDataFile)) { return 0; }
+    loadTestData(inputRegions, correctJets, testDataFile);
     
     //Fill the L1GctJetFinder with regions.
     for(int i = 0; i < maxRegions; ++i)
@@ -87,8 +109,7 @@ int main(int argc, char **argv)
         
     if(testPass == false)
     {
-        cout << "\nTest class has failed initial data input/output comparison!" << endl;
-        return 0;
+        return "Test class has failed initial data input/output comparison!";
     }
     
     myJetFinder.process();  //Run algorithm
@@ -101,22 +122,20 @@ int main(int argc, char **argv)
     
     if(testPass == false)
     {
-        cout << "\nTest class has failed algorithm processing!" << endl;
-        return 0;
-    }    
-        
-    cout << "\nTest class has passed!" << endl;   
-    return 0;   
+        return "Test class has failed algorithm processing!";
+    }
+
+    return "Test class has passed!";        
 }
 
 
 // Loads test input regions from a text file.
-bool loadTestData(RegionsVector& regions, JetsVector& jets, const string &fileName)
+void loadTestData(RegionsVector &regions, JetsVector &jets, const string &fileName)
 {
     // File input stream
     ifstream fin;
     
-    if(!safeOpenFile(fin, fileName)) {return false;}  //open the file or fail gracefully
+    safeOpenFile(fin, fileName);  //open the file
     
     unsigned long int tempEt = 0;
     unsigned short int tempMip = 0;
@@ -140,22 +159,20 @@ bool loadTestData(RegionsVector& regions, JetsVector& jets, const string &fileNa
     // Close the file
     fin.close();    
         
-    return true;
+    return;
 }
     
     
-    
 // Function to safely open files of any name, using a referenced return ifstream
-bool safeOpenFile(ifstream &fin, const string &name)
+void safeOpenFile(ifstream &fin, const string &name)
 {
-  //Opens the file
-  fin.open(name.c_str(), ios::in);
+    //Opens the file
+    fin.open(name.c_str(), ios::in);
 
-  //Error message, and return false if it goes pair shaped
-  if(!fin.good())
-  {
-    cout << "\nError! Couldn't open the file "<< name << endl;
-    return false;
-  }
-  return true;
+    //Error message, and return false if it goes pair shaped
+    if(!fin.good())
+    {
+        throw std::runtime_error("Couldn't open the file " + name + "!");
+    }
+    return;
 }
