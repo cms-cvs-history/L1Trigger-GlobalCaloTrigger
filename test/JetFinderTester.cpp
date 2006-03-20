@@ -14,11 +14,11 @@
 //NOTE all these includes need to be sorted with a proper build include path,
 //rather than a relative path, in order to comply with CMS style.
 
-#include "../interface/L1GctJetFinder.h"  //The class to be tested
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetFinder.h"  //The class to be tested
 
 //Custom headers needed for this test
-#include "../interface/L1GctRegion.h"
-#include "../interface/L1GctJet.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctRegion.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
 
 //Standard library headers
 #include <fstream>   //for file IO
