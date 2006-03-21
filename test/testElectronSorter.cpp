@@ -11,7 +11,7 @@
  */
 
 //To be sorted out!
-#include "L1Trigger/GlobalCaloTrigger/src/L1GctElectronSorter.h" 
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctElectronSorter.h" 
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctEmCand.h"
 
 //Standard library headers
