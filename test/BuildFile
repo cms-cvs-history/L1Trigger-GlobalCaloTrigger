@@ -1,0 +1,4 @@
+
+<use name=L1Trigger/GlobalCaloTrigger>
+<bin name=jetFinderTester file=JetFinderTester.cpp>
+</bin>
