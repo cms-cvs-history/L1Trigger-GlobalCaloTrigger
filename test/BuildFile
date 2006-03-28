@@ -10,3 +10,6 @@
 <bin name=testEnergyAlgos file=testEnergyAlgos.cpp>
 </bin>
 
+<bin name=testJetFinalStage file=testJetFinalStage.cpp>
+</bin>
+
