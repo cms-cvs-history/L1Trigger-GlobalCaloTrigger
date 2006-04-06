@@ -75,11 +75,15 @@ string classTest()
   L1GctGlobalEnergyAlgos myGlobalEnergy;
   bool testPass = true;       //Test passing flag.
     
-  const int noOfValues=3;
-  vector<unsigned> energyValues(noOfValues);
+  const int noOfEtValues=2;
+  const int noOfHtValues=3;
+  const int maxValues=3;
+  vector<unsigned> energyValues(maxValues);
   unsigned energySum;
 
+  unsigned EtSumResult;
   unsigned EtHadResult;
+  vector<unsigned> JcResult(12);
 
   const int nbitsEt=12;
   const unsigned energyMax=((1<<nbitsEt) - 1);
@@ -96,12 +100,30 @@ string classTest()
       // Load the input data into the algorithm and store
       // a local copy of the output.
       //
-      // Jet energy sums (Ht):
-      generateTestData(energyValues, noOfValues, energyMax, energySum);
+      //--------------------------------------------------------------------------------------
+      //
+      // Total transverse energy (Et):
+      generateTestData(energyValues, noOfEtValues, energyMax, energySum);
 
-      cout << "\nEnergy " << energyValues[0];
-      cout << "\nEnergy " << energyValues[1];
-      cout << "\nEnergy " << energyValues[2];
+      // Fill the L1GctGlobalEnergyAlgos
+      myGlobalEnergy.setInputWheelEt(0, energyValues[0], false);
+      myGlobalEnergy.setInputWheelEt(1, energyValues[1], false);
+
+      // Test the GetInput... methods
+      if (myGlobalEnergy.getInputEtValPlusWheel() != energyValues[0]) { testPass = false; }
+      if (myGlobalEnergy.getInputEtVlMinusWheel() != energyValues[1]) { testPass = false; }
+            
+      // Local storage of the sum
+      if (energySum <= energyMax)
+	{ EtSumResult = energySum; }
+      else
+	{ EtSumResult = (energySum & energyMax) | (1<<nbitsEt); }
+
+      //
+      //--------------------------------------------------------------------------------------
+      //
+      // Jet energy sums (Ht):
+      generateTestData(energyValues, noOfHtValues, energyMax, energySum);
 
       // Fill the L1GctGlobalEnergyAlgos
       myGlobalEnergy.setInputWheelHt(0, energyValues[0], false);
@@ -119,19 +141,65 @@ string classTest()
       else
 	{ EtHadResult = (energySum & energyMax) | (1<<nbitsEt); }
 
-      cout << "\nSum " << energySum << " result " << EtHadResult << endl;
+      //
+      //--------------------------------------------------------------------------------------
+      //
+      // Jet counts
+      for (int j=0; j<12; j++) {
+	unsigned total;
+        vector <unsigned> values(3);
+	const unsigned maxvalue=20;
+
+        generateTestData(values, (int) 3, maxvalue, total);
+
+        myGlobalEnergy.setInputWheelJc(0, j, values[0]);
+	myGlobalEnergy.setInputWheelJc(1, j, values[1]);
+        myGlobalEnergy.setInputBoundaryJc(j, values[2]);
+
+        if (values[0]>=15) {
+	  values[0] = 15;
+	  total = 31;
+	}
+        if (values[1]>=15) {
+	  values[1] = 15;
+	  total = 31;
+	}
+        if (values[2]>=7) {
+	  values[2] = 7;
+	  total = 31;
+	}
+        if (total>=32) total = 31;
+ 
+        if (myGlobalEnergy.getInputJcValPlusWheel(j) != values[0]) {testPass = false;}
+        if (myGlobalEnergy.getInputJcVlMinusWheel(j) != values[1]) {testPass = false;}
+        if (myGlobalEnergy.getInputJcBoundaryJets(j) != values[2]) {testPass = false;}
+
+        JcResult[j] = total;
+      }
 
       if(testPass == false)
 	{
 	  return "Test class has failed initial data input/output comparison!";
 	}
-    
+      //
+      //--------------------------------------------------------------------------------------
+      //
+   
       myGlobalEnergy.process();  //Run algorithm
 
-      cout << "\nAlgo output " << myGlobalEnergy.getEtHad() << endl;
+      //
+      //--------------------------------------------------------------------------------------
+      //
       // Check the output values
+      if (myGlobalEnergy.getEtSum() != EtSumResult) {testPass = false;}
       if (myGlobalEnergy.getEtHad() != EtHadResult) {testPass = false;}
+      for (int j=0 ; j<12 ; j++) {
+        if (myGlobalEnergy.getJetCounts(j) != JcResult[j]) {testPass = false;}
+      }
     
+      //
+      //--------------------------------------------------------------------------------------
+      //
     
       if(testPass == false)
 	{
