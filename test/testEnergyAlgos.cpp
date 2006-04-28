@@ -31,6 +31,7 @@
 using namespace std;
 
 // //Typedefs for the vector templates used
+        struct etmiss_vec { unsigned mag; unsigned phi;};
 // typedef vector<L1GctRegion> RegionsVector;
 // typedef vector<L1GctJet> JetsVector;
 
@@ -38,6 +39,9 @@ using namespace std;
 /// Runs the test, and returns a string with the test result message in.
 string classTest();
 //
+/// Generates test data for missing Et both as (x,y) components and
+/// 2-vector (magnitude, direction)
+void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
 /// Generates test data consisting of energies to be added together with their sum
 void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
 
@@ -88,7 +92,13 @@ string classTest()
   const int nbitsEt=12;
   const unsigned energyMax=((1<<nbitsEt) - 1);
 
-  const int maxTests=1000;
+  int exPlusVal, exMinusVl;
+  int eyPlusVal, eyMinusVl;
+  int exValue, eyValue;
+  etmiss_vec etVector;
+  unsigned etDiff, phDiff;
+
+  const int maxTests=10000;
 
   for (int t=0; t<maxTests; t++)
     {
@@ -99,6 +109,40 @@ string classTest()
       // generate our test input data and known results.
       // Load the input data into the algorithm and store
       // a local copy of the output.
+      //
+      //--------------------------------------------------------------------------------------
+      //
+      // Missing Et (Ex, Ey):
+      generateMissingEtTestData(exValue, eyValue, etVector);
+      generateTestData(energyValues, noOfEtValues, etVector.mag, energySum);
+      exPlusVal = energyValues[0];
+      eyPlusVal = energyValues[1];
+      exMinusVl = exValue - exPlusVal;
+      eyMinusVl = eyValue - eyPlusVal;
+      //
+      // Fill the L1GctGlobalEnergyAlgos
+      myGlobalEnergy.setInputWheelEx(0, exPlusVal, false);
+      myGlobalEnergy.setInputWheelEy(0, eyPlusVal, false);
+      myGlobalEnergy.setInputWheelEx(1, exMinusVl, false);
+      myGlobalEnergy.setInputWheelEy(1, eyMinusVl, false);
+      // Test the GetInput... methods
+      if (exPlusVal<2048 && exPlusVal>=-2048 &&
+          eyPlusVal<2048 && eyPlusVal>=-2048 &&
+          exMinusVl<2048 && exMinusVl>=-2048 &&
+          eyMinusVl<2048 && eyMinusVl>=-2048) {
+        if (myGlobalEnergy.getInputExValPlusWheel() != exPlusVal) { testPass = false;
+      cout << "Ex input 0 " << exPlusVal << " output " << myGlobalEnergy.getInputExValPlusWheel() << "\n"; }
+        if (myGlobalEnergy.getInputEyValPlusWheel() != eyPlusVal) { testPass = false;
+      cout << "Ey input 0 " << eyPlusVal << " output " << myGlobalEnergy.getInputEyValPlusWheel() << "\n"; }
+        if (myGlobalEnergy.getInputExVlMinusWheel() != exMinusVl) { testPass = false;
+      cout << "Ex input 1 " << exMinusVl << " output " << myGlobalEnergy.getInputExVlMinusWheel() << "\n"; }
+        if (myGlobalEnergy.getInputEyVlMinusWheel() != eyMinusVl) { testPass = false;
+      cout << "Ey input 1 " << eyMinusVl << " output " << myGlobalEnergy.getInputEyVlMinusWheel() << "\n"; }
+      }
+//       //debug...
+//            cout << "Ex " << exValue << " Ey " << eyValue << "\n";
+//            cout << "magnitude " << etVector.mag << " direction " << etVector.phi << "\n";
+//       //...
       //
       //--------------------------------------------------------------------------------------
       //
@@ -190,7 +234,20 @@ string classTest()
       //
       //--------------------------------------------------------------------------------------
       //
-      // Check the output values
+      // Check the missing Et calculation. Allow some margin for the
+      // integer calculation of missing Et.
+      etDiff = (unsigned) abs((long int) etVector.mag - (long int) myGlobalEnergy.getEtMiss());
+      phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy.getEtMissPhi());
+      if (phDiff==71) {phDiff=1;}
+      if ((etDiff > max((etVector.mag/100), (unsigned) 2)) || (phDiff > 1)) {
+        cout << "\nEx " << exValue << " Ey " << eyValue << "\n";
+        cout << "magnitude " << etVector.mag << " direction " << etVector.phi << "\n";
+        cout << "from GCT: mag " << myGlobalEnergy.getEtMiss() <<
+	                 " phi " << myGlobalEnergy.getEtMissPhi() << "\n";
+	cout << "\nphDiff=" << phDiff << " test no " << t << "\n";
+        if ((etDiff>etVector.mag/100)) {cout << "Et is wrong!\n"; }
+      }
+      // Check the other output values
       if (myGlobalEnergy.getEtSum() != EtSumResult) {testPass = false;}
       if (myGlobalEnergy.getEtHad() != EtHadResult) {testPass = false;}
       for (int j=0 ; j<12 ; j++) {
@@ -206,8 +263,51 @@ string classTest()
 	  return "Test class has failed algorithm processing!";
 	}
     }
-    return "Test class has passed!";        
+  return "Test class has passed!";        
 }
+
+// Generates 2-d missing Et vector
+void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
+{
+  // This produces random variables distributed as a 2-d Gaussian
+  // with a standard deviation of sigma for each component,
+  // and magnitude ranging up to 5*sigma.
+  //
+  // With sigma set to 400 we will always be in the range
+  // of 12-bit signed integers (-2048 to 2047).
+  const float sigma=400.;
+
+  // rmax controls the magnitude range
+  // Chosen as a power of two conveniently close to
+  // exp(5*5/2) to give a 5*sigma range.
+  const unsigned rmax=262144;
+
+  vector<unsigned> components(2);
+  unsigned dummySum;
+  float p,r,s;
+  float Emag, Ephi;
+
+  // Generate a pair of uniform pseudo-random integers
+  generateTestData(components, (int) 2, rmax, dummySum);
+
+  // Exclude the value zero for the first random integer
+  // (Alternatively, return an overflow bit)
+  while (components[0]==0) {generateTestData(components, (int) 2, rmax, dummySum);}
+
+  // Convert to the 2-d Gaussian
+  r = float(rmax);
+  s = r/float(components[0]);
+  p = float(components[1])/r;
+  Emag = sigma*sqrt(2.*log(s));
+  Ephi = 6.2831854*p;
+  //
+  Et.mag = int (Emag);
+  Et.phi = int (72.*p);
+  Ex = int (Emag*cos(Ephi));
+  Ey = int (Emag*sin(Ephi));
+}
+
+
 
 /// Generates test data consisting of energies to be added together with their sum
 void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum)
