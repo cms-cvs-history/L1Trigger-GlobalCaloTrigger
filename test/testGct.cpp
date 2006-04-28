@@ -27,23 +27,41 @@ using namespace std;
 
 int main()
 {
-  cout<<"In main"<<endl;
+ 
   L1GlobalCaloTrigger* gct = L1GlobalCaloTrigger::theGct();
-  //vector<L1GctEmCand> electrons = gct->getIsoElectrons();
-  // vector<L1GctSourceCard*> theSourceCards;
-  //theSourceCards = gct->getSourceCards();
-  cout<<"Works so far"<<endl;
-  //for(unsigned int i=0;i!=theSourceCards.size();i++){
-    ///    theSourceCards[i]->openInputFile(dummyData);
-    //vector<L1GctEmCand> isoElectrons = theSourceCards[i]->getIsoElectrons();
-    //vector<L1GctEmCand> nonIsoElectrons = theSourceCards[i]->getNonIsoElectrons();
-    //cout<<"For source card no: "<<i;
-    //for(unsigned int n=0;n!=isoElectrons.size();n++){
-  //cout<<" iso electrons are:"<<endl;
-  //   cout<<isoElectrons[n].getRank()<<" "<<isoElectrons[n].getEta()<<" "<<isoElectrons[n].getPhi()<<endl;
-  //  cout<<"and non-iso electrons are: "<<endl;
-  //   cout<<nonIsoElectrons[n].getRank()<<" "<<isoElectrons[n].getEta()<<" "<<isoElectrons[n].getPhi()<<endl;
-  //}
-    //  Gct->process();
-  //}
+  //Firstly, check that there's nothing in the buffers of the GCT
+  vector<L1GctEmCand> electrons = gct->getIsoElectrons();
+  vector<L1GctEmCand> nonIso = gct->getNonIsoElectrons();
+  cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
+  cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
+  for(unsigned int i=0;i!=electrons.size();i++){
+    cout<<"          "<<electrons[i].getRank()<<"      "<<electrons[i].getEta()<<"     "<<electrons[i].getPhi()<<
+    "         "<<nonIso[i].getRank()<<"      "<<nonIso[i].getEta()<<"     "<<nonIso[i].getPhi()<<endl;
+  }
+
+  //Open a source card file and look at the electrons in there
+  vector<L1GctSourceCard*> theSourceCards = gct->getSourceCards();
+  for(unsigned int i=0;i!=(theSourceCards.size()/3);i++){
+    //These ready for later when gotten more than one BX/file to read in
+    //  theSourceCards[i]->openInputFile("testSourceCardInput.txt");
+    //  theSourceCards[i*3]->readBX();
+    //First checking buffers before reading in data
+  vector<L1GctEmCand> isoElectrons = theSourceCards[i*3]->getIsoElectrons();
+  vector<L1GctEmCand> nonIsoElectrons = theSourceCards[i*3]->getNonIsoElectrons();
+  cout<<"For source card no: "<<i<<"  Rank   Eta   Phi"<<endl;
+  for(unsigned int n=0;n!=isoElectrons.size();n++){
+    cout<<"Iso electrons are:      "<<isoElectrons[n].getRank()<<"      "<<isoElectrons[n].getEta()<<"     "<<isoElectrons[n].getPhi()<<endl;
+    cout<<"Non-iso are:            "<<nonIsoElectrons[n].getRank()<<"      "<<isoElectrons[n].getEta()<<"     "<<isoElectrons[n].getPhi()<<endl;
+  }
+  }
+  theSourceCards[0]->openInputFile("testSourceCardInput.txt");
+  theSourceCards[0]->readBX();
+  vector<L1GctEmCand> iso_zero = theSourceCards[0]->getIsoElectrons();
+  vector<L1GctEmCand> nonIso_zero = theSourceCards[0]->getNonIsoElectrons();
+  cout<<"For source card no  0   Rank   Eta   Phi"<<endl;
+   for(unsigned int n=0;n!=iso_zero.size();n++){
+     cout<<"Iso electrons are:      "<<std::hex<<iso_zero[n].getRank()<<"      "<<std::hex<<iso_zero[n].getEta()<<"     "<<std::hex<<iso_zero[n].getPhi()<<endl;
+      cout<<"Non-iso are:            "<<nonIso_zero[n].getRank()<<"      "<<nonIso_zero[n].getEta()<<"     "<<nonIso_zero[n].getPhi()<<endl;
+   }
 }
+
