@@ -15,3 +15,8 @@
 
 <bin name=testSourceCard file=testSourceCard.cpp>
 </bin>
+
+<bin name=testGct file=testGct.cpp>
+</bin>
+
+<flags CXXFLAGS="-g -00">
