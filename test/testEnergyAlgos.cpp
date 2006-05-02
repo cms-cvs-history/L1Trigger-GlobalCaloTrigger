@@ -96,9 +96,11 @@ string classTest()
   int eyPlusVal, eyMinusVl;
   int exValue, eyValue;
   etmiss_vec etVector;
+  bool etOvflo;
   unsigned etDiff, phDiff;
+  unsigned etMargin, phMargin;
 
-  const int maxTests=10000;
+  const int maxTests=100000;
 
   for (int t=0; t<maxTests; t++)
     {
@@ -126,23 +128,17 @@ string classTest()
       myGlobalEnergy.setInputWheelEx(1, exMinusVl, false);
       myGlobalEnergy.setInputWheelEy(1, eyMinusVl, false);
       // Test the GetInput... methods
-      if (exPlusVal<2048 && exPlusVal>=-2048 &&
-          eyPlusVal<2048 && eyPlusVal>=-2048 &&
-          exMinusVl<2048 && exMinusVl>=-2048 &&
-          eyMinusVl<2048 && eyMinusVl>=-2048) {
-        if (myGlobalEnergy.getInputExValPlusWheel() != exPlusVal) { testPass = false;
-      cout << "Ex input 0 " << exPlusVal << " output " << myGlobalEnergy.getInputExValPlusWheel() << "\n"; }
-        if (myGlobalEnergy.getInputEyValPlusWheel() != eyPlusVal) { testPass = false;
-      cout << "Ey input 0 " << eyPlusVal << " output " << myGlobalEnergy.getInputEyValPlusWheel() << "\n"; }
-        if (myGlobalEnergy.getInputExVlMinusWheel() != exMinusVl) { testPass = false;
-      cout << "Ex input 1 " << exMinusVl << " output " << myGlobalEnergy.getInputExVlMinusWheel() << "\n"; }
-        if (myGlobalEnergy.getInputEyVlMinusWheel() != eyMinusVl) { testPass = false;
-      cout << "Ey input 1 " << eyMinusVl << " output " << myGlobalEnergy.getInputEyVlMinusWheel() << "\n"; }
+      etOvflo = !(exPlusVal<2048 && exPlusVal>=-2048 &&
+                  eyPlusVal<2048 && eyPlusVal>=-2048 &&
+                  exMinusVl<2048 && exMinusVl>=-2048 &&
+                  eyMinusVl<2048 && eyMinusVl>=-2048);
+      if (etOvflo) {
+      } else {
+        if (myGlobalEnergy.getInputExValPlusWheel() != exPlusVal) { testPass = false; }
+        if (myGlobalEnergy.getInputEyValPlusWheel() != eyPlusVal) { testPass = false; }
+        if (myGlobalEnergy.getInputExVlMinusWheel() != exMinusVl) { testPass = false; }
+        if (myGlobalEnergy.getInputEyVlMinusWheel() != eyMinusVl) { testPass = false; }
       }
-//       //debug...
-//            cout << "Ex " << exValue << " Ey " << eyValue << "\n";
-//            cout << "magnitude " << etVector.mag << " direction " << etVector.phi << "\n";
-//       //...
       //
       //--------------------------------------------------------------------------------------
       //
@@ -236,16 +232,16 @@ string classTest()
       //
       // Check the missing Et calculation. Allow some margin for the
       // integer calculation of missing Et.
-      etDiff = (unsigned) abs((long int) etVector.mag - (long int) myGlobalEnergy.getEtMiss());
-      phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy.getEtMissPhi());
-      if (phDiff==71) {phDiff=1;}
-      if ((etDiff > max((etVector.mag/100), (unsigned) 2)) || (phDiff > 1)) {
-        cout << "\nEx " << exValue << " Ey " << eyValue << "\n";
-        cout << "magnitude " << etVector.mag << " direction " << etVector.phi << "\n";
-        cout << "from GCT: mag " << myGlobalEnergy.getEtMiss() <<
-	                 " phi " << myGlobalEnergy.getEtMissPhi() << "\n";
-	cout << "\nphDiff=" << phDiff << " test no " << t << "\n";
-        if ((etDiff>etVector.mag/100)) {cout << "Et is wrong!\n"; }
+      if (etOvflo) {
+	if (myGlobalEnergy.getEtMiss()<0x1000) {testPass = false;}
+      } else {
+        etDiff = (unsigned) abs((long int) etVector.mag - (long int) myGlobalEnergy.getEtMiss());
+        phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy.getEtMissPhi());
+        if (phDiff>60) {phDiff=72-phDiff;}
+        //
+        etMargin = max((etVector.mag/100), (unsigned) 1) + 2;
+        phMargin = (30/etVector.mag) + 1;
+        if ((etDiff > etMargin) || (phDiff > phMargin)) {testPass = false;}
       }
       // Check the other output values
       if (myGlobalEnergy.getEtSum() != EtSumResult) {testPass = false;}
