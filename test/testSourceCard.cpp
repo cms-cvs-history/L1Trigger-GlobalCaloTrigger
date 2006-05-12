@@ -61,9 +61,9 @@ int main(int argc, char **argv)
     {
         safeOpenOutputFile(fout, resultsFile);
         
-        L1GctSourceCard * mySourceCardT1 = new L1GctSourceCard(L1GctSourceCard::cardType1); //test objects
-        L1GctSourceCard * mySourceCardT2 = new L1GctSourceCard(L1GctSourceCard::cardType2); 
-        L1GctSourceCard * mySourceCardT3 = new L1GctSourceCard(L1GctSourceCard::cardType3);
+        L1GctSourceCard * mySourceCardT1 = new L1GctSourceCard(0, L1GctSourceCard::cardType1); //test objects
+        L1GctSourceCard * mySourceCardT2 = new L1GctSourceCard(0, L1GctSourceCard::cardType2); 
+        L1GctSourceCard * mySourceCardT3 = new L1GctSourceCard(0, L1GctSourceCard::cardType3);
         
         //Read the same file simultaneously
         mySourceCardT1->openInputFile(testDataFile);
@@ -168,9 +168,9 @@ void safeOpenOutputFile(ofstream &fout, const string name)
 // Converts the EmCand info back into the original RCT output format and returns as a ULong
 ULong compressElectronData(L1GctEmCand& emCand)
 {
-    ULong rank = emCand.getRank();
-    ULong phi  = emCand.getPhi();
-    ULong eta  = emCand.getEta();
+    ULong rank = emCand.rank();
+    ULong phi  = emCand.phi();
+    ULong eta  = emCand.eta();
     
     phi <<= 6;
     eta <<= 7;

@@ -35,8 +35,8 @@ int main()
   cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
   cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
   for(unsigned int i=0;i!=electrons.size();i++){
-    cout<<"          "<<electrons[i].getRank()<<"      "<<electrons[i].getEta()<<"     "<<electrons[i].getPhi()<<
-    "         "<<nonIso[i].getRank()<<"      "<<nonIso[i].getEta()<<"     "<<nonIso[i].getPhi()<<endl;
+    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].eta()<<"     "<<electrons[i].phi()<<
+    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].eta()<<"     "<<nonIso[i].phi()<<endl;
   }
 
   //Open a source card file and look at the electrons in there
@@ -50,8 +50,8 @@ int main()
   vector<L1GctEmCand> nonIsoElectrons = theSourceCards[i*3]->getNonIsoElectrons();
   cout<<"For source card no: "<<i<<"  Rank   Eta   Phi"<<endl;
   for(unsigned int n=0;n!=isoElectrons.size();n++){
-    cout<<"Iso electrons are:      "<<isoElectrons[n].getRank()<<"      "<<isoElectrons[n].getEta()<<"     "<<isoElectrons[n].getPhi()<<endl;
-    cout<<"Non-iso are:            "<<nonIsoElectrons[n].getRank()<<"      "<<isoElectrons[n].getEta()<<"     "<<isoElectrons[n].getPhi()<<endl;
+    cout<<"Iso electrons are:      "<<isoElectrons[n].rank()<<"      "<<isoElectrons[n].eta()<<"     "<<isoElectrons[n].phi()<<endl;
+    cout<<"Non-iso are:            "<<nonIsoElectrons[n].rank()<<"      "<<isoElectrons[n].eta()<<"     "<<isoElectrons[n].phi()<<endl;
   }
   }
   theSourceCards[0]->openInputFile("testSourceCardInput.txt");
@@ -60,8 +60,8 @@ int main()
   vector<L1GctEmCand> nonIso_zero = theSourceCards[0]->getNonIsoElectrons();
   cout<<"For source card no  0   Rank   Eta   Phi"<<endl;
    for(unsigned int n=0;n!=iso_zero.size();n++){
-     cout<<"Iso electrons are:      "<<std::hex<<iso_zero[n].getRank()<<"      "<<std::hex<<iso_zero[n].getEta()<<"     "<<std::hex<<iso_zero[n].getPhi()<<endl;
-      cout<<"Non-iso are:            "<<nonIso_zero[n].getRank()<<"      "<<nonIso_zero[n].getEta()<<"     "<<nonIso_zero[n].getPhi()<<endl;
+     cout<<"Iso electrons are:      "<<std::hex<<iso_zero[n].rank()<<"      "<<std::hex<<iso_zero[n].eta()<<"     "<<std::hex<<iso_zero[n].phi()<<endl;
+      cout<<"Non-iso are:            "<<nonIso_zero[n].rank()<<"      "<<nonIso_zero[n].eta()<<"     "<<nonIso_zero[n].phi()<<endl;
    }
 }
 
