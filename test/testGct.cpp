@@ -28,7 +28,7 @@ using namespace std;
 int main()
 {
  
-  L1GlobalCaloTrigger* gct = L1GlobalCaloTrigger::theGct();
+  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger();
   //Firstly, check that there's nothing in the buffers of the GCT
   vector<L1GctEmCand> electrons = gct->getIsoElectrons();
   vector<L1GctEmCand> nonIso = gct->getNonIsoElectrons();

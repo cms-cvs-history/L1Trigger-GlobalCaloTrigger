@@ -2,6 +2,9 @@
 <use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
 
+<bin name=testEtTypes file=testEtTypes.cpp>
+</bin>
+
 <bin name=testJetFinder file=testJetFinder.cpp>
 </bin>
 
