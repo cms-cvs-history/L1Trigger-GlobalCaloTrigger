@@ -20,7 +20,6 @@
 
 int main()
 {
- 
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger();
   gct->print();
   //Firstly, check that there's nothing in the buffers of the GCT
