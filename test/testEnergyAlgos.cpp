@@ -81,7 +81,7 @@ string classTest()
   bool testPass = true;       //Test passing flag.
     
   const int noOfEtValues=2;
-  const int noOfHtValues=3;
+  const int noOfHtValues=2;
   const int maxValues=3;
   vector<unsigned> energyValues(maxValues);
   unsigned energySum;
@@ -136,12 +136,12 @@ string classTest()
                   eyMinusVl<2048 && eyMinusVl>=-2048);
       if (etOvflo) {
       } else {
-        if (myGlobalEnergy.inputExValPlusWheel().value() != exPlusVal) { 
+        if (myGlobalEnergy.getInputExValPlusWheel().value() != exPlusVal) { 
 	  cout << "Input Ex value " << exPlusVal << " returned from GlobalEnergyAlgos " <<
-	    myGlobalEnergy.inputExValPlusWheel().value() << endl ; testPass = false; }
-        if (myGlobalEnergy.inputEyValPlusWheel().value() != eyPlusVal) { testPass = false; }
-        if (myGlobalEnergy.inputExVlMinusWheel().value() != exMinusVl) { testPass = false; }
-        if (myGlobalEnergy.inputEyVlMinusWheel().value() != eyMinusVl) { testPass = false; }
+	    myGlobalEnergy.getInputExValPlusWheel().value() << endl ; testPass = false; }
+        if (myGlobalEnergy.getInputEyValPlusWheel().value() != eyPlusVal) { testPass = false; }
+        if (myGlobalEnergy.getInputExVlMinusWheel().value() != exMinusVl) { testPass = false; }
+        if (myGlobalEnergy.getInputEyVlMinusWheel().value() != eyMinusVl) { testPass = false; }
       }
       //
       //--------------------------------------------------------------------------------------
@@ -154,8 +154,8 @@ string classTest()
       myGlobalEnergy.setInputWheelEt(1, energyValues[1], false);
 
       // Test the GetInput... methods
-      if (myGlobalEnergy.inputEtValPlusWheel().value() != energyValues[0]) { cout << "EtPlus\n" ; testPass = false; }
-      if (myGlobalEnergy.inputEtVlMinusWheel().value() != energyValues[1]) { cout << "EtMnus\n" ; testPass = false; }
+      if (myGlobalEnergy.getInputEtValPlusWheel().value() != energyValues[0]) { cout << "EtPlus\n" ; testPass = false; }
+      if (myGlobalEnergy.getInputEtVlMinusWheel().value() != energyValues[1]) { cout << "EtMnus\n" ; testPass = false; }
             
       // Local storage of the sum
       if (energySum <= energyMax)
@@ -172,12 +172,10 @@ string classTest()
       // Fill the L1GctGlobalEnergyAlgos
       myGlobalEnergy.setInputWheelHt(0, energyValues[0], false);
       myGlobalEnergy.setInputWheelHt(1, energyValues[1], false);
-      myGlobalEnergy.setInputBoundaryHt(energyValues[2], false);
 
       // Test the GetInput... methods
-      if (myGlobalEnergy.inputHtValPlusWheel().value() != energyValues[0]) { cout << "HtPlus\n" ;  testPass = false; }
-      if (myGlobalEnergy.inputHtVlMinusWheel().value() != energyValues[1]) { cout << "HtMnus\n" ;  testPass = false; }
-      if (myGlobalEnergy.inputHtBoundaryJets().value() != energyValues[2]) { cout << "HtZero\n" ;  testPass = false; }
+      if (myGlobalEnergy.getInputHtValPlusWheel().value() != energyValues[0]) { cout << "HtPlus\n" ;  testPass = false; }
+      if (myGlobalEnergy.getInputHtVlMinusWheel().value() != energyValues[1]) { cout << "HtMnus\n" ;  testPass = false; }
             
       // Local storage of the sum
       if (energySum <= energyMax)
@@ -191,14 +189,13 @@ string classTest()
       // Jet counts
       for (int j=0; j<12; j++) {
 	unsigned total;
-        vector <unsigned> values(3);
+        vector <unsigned> values(2);
 	const unsigned maxvalue=20;
 
         generateTestData(values, (int) 3, maxvalue, total);
 
         myGlobalEnergy.setInputWheelJc(0, j, values[0]);
 	myGlobalEnergy.setInputWheelJc(1, j, values[1]);
-        myGlobalEnergy.setInputBoundaryJc(j, values[2]);
 
         if (values[0]>=7) {
 	  values[0] = 7;
@@ -208,17 +205,12 @@ string classTest()
 	  values[1] = 7;
 	  total = 31;
 	}
-        if (values[2]>=7) {
-	  values[2] = 7;
-	  total = 31;
-	}
         if (total>=32) total = 31;
  
-        if (myGlobalEnergy.inputJcValPlusWheel(j).value() != values[0]) { cout << "JcPlus\n" ;
+        if (myGlobalEnergy.getInputJcValPlusWheel(j).value() != values[0]) { cout << "JcPlus\n" ;
 	cout << "Input " << values[0] << " algo " << 
-	  myGlobalEnergy.inputJcValPlusWheel(j) << endl; testPass = false;}
-        if (myGlobalEnergy.inputJcVlMinusWheel(j).value() != values[1]) { cout << "JcMnus\n" ; testPass = false;}
-        if (myGlobalEnergy.inputJcBoundaryJets(j).value() != values[2]) { cout << "JcZero\n" ; testPass = false;}
+	  myGlobalEnergy.getInputJcValPlusWheel(j) << endl; testPass = false;}
+        if (myGlobalEnergy.getInputJcVlMinusWheel(j).value() != values[1]) { cout << "JcMnus\n" ; testPass = false;}
 
         JcResult[j] = total;
       }
@@ -239,10 +231,10 @@ string classTest()
       // Check the missing Et calculation. Allow some margin for the
       // integer calculation of missing Et.
       if (etOvflo) {
-	if (!myGlobalEnergy.etMiss().overFlow()) {testPass = false;}
+	if (!myGlobalEnergy.getEtMiss().overFlow()) {testPass = false;}
       } else {
-        etDiff = (unsigned) abs((long int) etVector.mag - (long int) myGlobalEnergy.etMiss().value());
-        phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy.etMissPhi().value());
+        etDiff = (unsigned) abs((long int) etVector.mag - (long int) myGlobalEnergy.getEtMiss().value());
+        phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy.getEtMissPhi().value());
         if (phDiff>60) {phDiff=72-phDiff;}
         //
         etMargin = max((etVector.mag/100), (unsigned) 1) + 2;
@@ -250,15 +242,14 @@ string classTest()
         if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss" << endl; testPass = false;}
       }
       // Check the other output values
-      if (myGlobalEnergy.etSum().value() != EtSumResult) {cout << "Algo etSum" << endl; testPass = false;}
-      if (myGlobalEnergy.etHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
-      cout << "Expected " << EtHadResult << " found " << myGlobalEnergy.etHad() << endl; testPass = false;}
+      if (myGlobalEnergy.getEtSum().value() != EtSumResult) {cout << "Algo etSum" << endl; testPass = false;}
+      if (myGlobalEnergy.getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
+      cout << "Expected " << EtHadResult << " found " << myGlobalEnergy.getEtHad() << endl; testPass = false;}
       for (int j=0 ; j<12 ; j++) {
-        if (myGlobalEnergy.jetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
-      cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy.jetCount(j) << endl; 
-      cout << "PlusWheel " << myGlobalEnergy.inputJcValPlusWheel(j) << endl; 
-      cout << "PlusWheel " << myGlobalEnergy.inputJcVlMinusWheel(j) << endl; 
-      cout << "PlusWheel " << myGlobalEnergy.inputJcBoundaryJets(j) << endl; testPass = false;}
+        if (myGlobalEnergy.getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
+      cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy.getJetCount(j) << endl; 
+      cout << "PlusWheel " << myGlobalEnergy.getInputJcValPlusWheel(j) << endl; 
+      cout << "PlusWheel " << myGlobalEnergy.getInputJcVlMinusWheel(j) << endl; testPass = false;}
       }
     
       //
