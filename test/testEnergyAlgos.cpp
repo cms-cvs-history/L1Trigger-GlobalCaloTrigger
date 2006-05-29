@@ -190,9 +190,9 @@ string classTest()
       for (int j=0; j<12; j++) {
 	unsigned total;
         vector <unsigned> values(2);
-	const unsigned maxvalue=20;
+	const unsigned maxvalue=10;
 
-        generateTestData(values, (int) 3, maxvalue, total);
+        generateTestData(values, (int) 2, maxvalue, total);
 
         myGlobalEnergy.setInputWheelJc(0, j, values[0]);
 	myGlobalEnergy.setInputWheelJc(1, j, values[1]);
@@ -258,9 +258,13 @@ string classTest()
     
       if(testPass == false)
 	{
+	  // Print failed events for debug purposes
+	  cout << myGlobalEnergy << endl;
 	  return "Test class has failed algorithm processing!";
 	}
     }
+  // Test the print routine at the end
+  cout << myGlobalEnergy << endl;
   return "Test class has passed!";        
 }
 
