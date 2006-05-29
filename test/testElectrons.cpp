@@ -1,4 +1,4 @@
-/*! \file testGct.cpp
+/*! \file testElectrons.cpp
  * \test file for testing the (eventually) the full Gct 
  *
  *  For now, this test program only handles electrons.
