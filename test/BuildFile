@@ -5,25 +5,26 @@
 <bin name=testJets file=testJets.cpp>
 </bin>
 
+<bin name=testElectrons file=testElectrons.cpp>
+</bin>
+
 <bin name=testEtTypes file=testEtTypes.cpp>
 </bin>
 
-<bin name=testJetFinder file=testJetFinder.cpp>
-</bin>
+#<bin name=testJetFinder file=testJetFinder.cpp>
+#</bin>
 
 #<bin name=testElectronSorter file=testElectronSorter.cpp>
 #</bin>
 
-<bin name=testEnergyAlgos file=testEnergyAlgos.cpp>
-</bin>
+#<bin name=testEnergyAlgos file=testEnergyAlgos.cpp>
+#</bin>
 
-<bin name=testJetFinalStage file=testJetFinalStage.cpp>
-</bin>
+#<bin name=testJetFinalStage file=testJetFinalStage.cpp>
+#</bin>
 
-<bin name=testSourceCard file=testSourceCard.cpp>
-</bin>
+#<bin name=testSourceCard file=testSourceCard.cpp>
+#</bin>
 
-<bin name=testGct file=testGct.cpp>
-</bin>
 
 <flags CXXFLAGS="-g -O0">
