@@ -11,8 +11,8 @@
 <bin name=testEtTypes file=testEtTypes.cpp>
 </bin>
 
-#<bin name=testJetFinder file=testJetFinder.cpp>
-#</bin>
+<bin name=testJetFinder file=testJetFinder.cpp>
+</bin>
 
 #<bin name=testElectronSorter file=testElectronSorter.cpp>
 #</bin>
