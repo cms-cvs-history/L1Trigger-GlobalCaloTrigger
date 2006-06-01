@@ -27,8 +27,8 @@ typedef unsigned long int ULong;
 ULong currentBX;
 vector<L1GctEmCand> isoElectronsOut;  
 vector<L1GctEmCand> nonIsoElectronsOut;
-L1GctSourceCard::MipBits mipBitsOut;
-L1GctSourceCard::QuietBits quietBitsOut;
+unsigned mipBitsOut;
+unsigned quietBitsOut;
 vector<L1GctRegion> regionsOutT2;
 vector<L1GctRegion> regionsOutT3;
 
@@ -65,6 +65,10 @@ int main(int argc, char **argv)
         L1GctSourceCard * mySourceCardT2 = new L1GctSourceCard(0, L1GctSourceCard::cardType2); 
         L1GctSourceCard * mySourceCardT3 = new L1GctSourceCard(0, L1GctSourceCard::cardType3);
         
+//        cout << mySourceCardT1 << endl;
+//        cout << mySourceCardT2 << endl;
+//        cout << mySourceCardT3 << endl;        
+
         //Read the same file simultaneously
         mySourceCardT1->openInputFile(testDataFile);
         mySourceCardT2->openInputFile(testDataFile);  
@@ -128,12 +132,12 @@ void outputDataToFile(ofstream& fout)
     fout << endl;
     for(i=0;i<14;++i)
     {
-        fout << " " << mipBitsOut[i];
+        fout << " " << ((mipBitsOut & (1<<i)) >> i);
     }
     fout << endl;
     for(i=0;i<14;++i)
     {
-        fout << " " << quietBitsOut[i];
+        fout << " " << ((quietBitsOut& (1<<i)) >> i);
     }
     fout << endl;   
     for(i=0;i<regionsOutT3.size();++i)
@@ -145,7 +149,7 @@ void outputDataToFile(ofstream& fout)
         if(i==4) { fout << endl; }
         
         if(i<4) { fout << " " << compressCentralRegionData(regionsOutT2[i]); }
-        else    { fout << " " << regionsOutT2[i].getEt(); }
+        else    { fout << " " << regionsOutT2[i].et(); }
     }
     fout << endl;
 }
@@ -182,9 +186,9 @@ ULong compressElectronData(L1GctEmCand& emCand)
 ULong compressCentralRegionData(L1GctRegion& region)
 {
     ULong output=0;
-    if(region.getOverFlow()) {output += (1<<10);}
-    if(region.getTauVeto()) {output += (1<<11);}
-    output += region.getEt();
+    if(region.overFlow()) {output += (1<<10);}
+    if(region.tauVeto()) {output += (1<<11);}
+    output += region.et();
     
     return output;    
 }
