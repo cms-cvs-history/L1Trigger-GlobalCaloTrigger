@@ -105,7 +105,7 @@ int main(int argc, char **argv)
   }
   catch (cms::Exception& e)
   {
-    cerr << "\nError! " << e.what() << endl;
+    cerr << e.what() << endl;
   }
   catch(...)
   {
