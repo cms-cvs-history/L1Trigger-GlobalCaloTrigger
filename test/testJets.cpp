@@ -21,14 +21,14 @@ int main()
   try {
     // New GCT
     L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(true); 
-    cout << "Reset the GCT" << endl;
-
-    // clear everything
-    gct->reset(); 
-
+ 
     // Open source card input files
     cout << "Opening input source card files" << endl;
     gct->openSourceCardFiles("RCT_"); 
+
+    // clear everything
+    cout << "Reset the GCT" << endl; 
+    gct->reset(); 
 
     // Run
     cout << "Run the GCT...." << endl;
