@@ -11,8 +11,9 @@
 
 
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h" 
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h" 
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctEmCand.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
+
+#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctDigis.h"
 
 //Standard library headers
 #include <fstream>   //for file IO
