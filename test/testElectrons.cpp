@@ -28,8 +28,8 @@ using namespace std;
 
 int main()
 {
- 
-  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger();
+  try { 
+  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(1);
   
   //gct->print();
   //Firstly, check that there's nothing in the buffers of the GCT
@@ -43,17 +43,24 @@ int main()
   }
 
   //Open source card files and look at the electrons in there
+  cout<<"testelectrons open file?"<<endl;
     std::string fileName = "testElectronsRct_";
     gct->openSourceCardFiles(fileName);
+    cout<<"about to process..."<<endl;
     gct->process();
-    gct->print();
+    //gct->print();
     vector<L1GctEmCand> newIso = gct->getIsoElectrons();
     vector<L1GctEmCand> newnonIso = gct->getNonIsoElectrons();
     cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
     cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
-    for(unsigned int i=0;i!=electrons.size();i++){
+    for(unsigned int i=0;i!=newIso.size();i++){
       cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].eta()<<"     "<<newIso[i].phi()<<
 	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].eta()<<"     "<<newnonIso[i].phi()<<endl;
     }
+    cout<<"END OF TEST PROGRAM"<<endl;
+  }
+  catch(std::exception e){
+    e.what();
+  }
 }
 
