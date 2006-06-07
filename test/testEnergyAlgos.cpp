@@ -17,9 +17,11 @@
 
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctGlobalEnergyAlgos.h"  //The class to be tested
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelEnergyFpga.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
 
 // //Custom headers needed for this test
-// #include "L1Trigger/GlobalCaloTrigger/interface/L1GctRegion.h"
+#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctRegion.h"
 // #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctEtTypes.h"
 
@@ -34,7 +36,7 @@ using namespace std;
 
 // //Typedefs for the vector templates used
         struct etmiss_vec { unsigned mag; unsigned phi;};
-// typedef vector<L1GctRegion> RegionsVector;
+typedef vector<L1GctRegion> RegionsVector;
 // typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
@@ -79,23 +81,29 @@ int main(int argc, char **argv)
 string classTest()
 {
   L1GctGlobalEnergyAlgos* myGlobalEnergy;
+  vector<L1GctSourceCard*> mySourceCards;
+
   bool testPass = true;       //Test passing flag.
     
-  const int noOfEtValues=2;
-  const int noOfHtValues=2;
+  RegionsVector inputRegions;
+  const int noOfInputRegions=10;
+
+//   const int noOfEtValues=2;
+//   const int noOfHtValues=2;
   const int maxValues=3;
   vector<unsigned> energyValues(maxValues);
-  unsigned energySum;
+//   unsigned energySum;
 
-  unsigned EtSumResult;
-  unsigned EtHadResult;
+//   unsigned EtSumResult;
+//   unsigned EtHadResult;
   vector<unsigned> JcResult(12);
 
-  const int nbitsEt=12;
-  const unsigned energyMax=((1<<nbitsEt) - 1);
+//   const int nbitsEt=12;
+//   const unsigned energyMax=((1<<nbitsEt) - 1);
 
   int exPlusVal, exMinusVl;
   int eyPlusVal, eyMinusVl;
+  unsigned etPlusVal, etMinusVl;
   int exValue, eyValue;
   etmiss_vec etVector;
   bool etOvflo;
@@ -103,140 +111,123 @@ string classTest()
   unsigned etMargin, phMargin;
 
   const int maxTests=100000;
+  const int initialTests=10;
 
   // Initialise the gct
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false);
   myGlobalEnergy = gct->getEnergyFinalStage();
+  mySourceCards  = gct->getSourceCards();
+
+  // Initialise my input regions
+  for (int i=0; i<noOfInputRegions; i++) {
+    inputRegions.push_back(L1GctRegion(0, 0, 0, false, false, false, false));
+  }
 
   for (int t=0; t<maxTests; t++)
     {
-      cout << "Test " << t << endl;
+      if (t<initialTests) { cout << "Test " << t << endl; }
       // Initialise the gct
       gct->reset();
-      cout << "returned from gct reset()" << endl;
 
-      // For each of the different types of energy sum,
-      // generate our test input data and known results.
-      // Load the input data into the algorithm and store
-      // a local copy of the output.
-      //
-      //--------------------------------------------------------------------------------------
-      //
-      // Missing Et (Ex, Ey):
-      generateMissingEtTestData(exValue, eyValue, etVector);
-      generateTestData(energyValues, noOfEtValues, etVector.mag, energySum);
-      exPlusVal = energyValues[0];
-      eyPlusVal = energyValues[1];
-      exMinusVl = exValue - exPlusVal;
-      eyMinusVl = eyValue - eyPlusVal;
-      //
-      // Fill the L1GctGlobalEnergyAlgos
-      cout << "about to set missing Et inputs" << endl;
-      myGlobalEnergy->setInputWheelEx(0, exPlusVal, false);
-      myGlobalEnergy->setInputWheelEy(0, eyPlusVal, false);
-      myGlobalEnergy->setInputWheelEx(1, exMinusVl, false);
-      myGlobalEnergy->setInputWheelEy(1, eyMinusVl, false);
-      // Test the GetInput... methods
-      etOvflo = !(exPlusVal<2048 && exPlusVal>=-2048 &&
-                  eyPlusVal<2048 && eyPlusVal>=-2048 &&
-                  exMinusVl<2048 && exMinusVl>=-2048 &&
-                  eyMinusVl<2048 && eyMinusVl>=-2048);
-      if (etOvflo) {
-      } else {
-        cout << "about to test missing Et inputs" << endl;
-        if (myGlobalEnergy->getInputExValPlusWheel().value() != exPlusVal) { 
-	  cout << "Input Ex value " << exPlusVal << " returned from GlobalEnergyAlgos " <<
-	    myGlobalEnergy->getInputExValPlusWheel().value() << endl ; testPass = false; }
-        if (myGlobalEnergy->getInputEyValPlusWheel().value() != eyPlusVal) { testPass = false; }
-        if (myGlobalEnergy->getInputExVlMinusWheel().value() != exMinusVl) { testPass = false; }
-        if (myGlobalEnergy->getInputEyVlMinusWheel().value() != eyMinusVl) { testPass = false; }
+      exPlusVal = 0;
+      eyPlusVal = 0;
+      etPlusVal = 0;
+      exMinusVl = 0;
+      eyMinusVl = 0;
+      etMinusVl = 0;
+
+      for (int i=0; i<(t<initialTests ? 1 : 0); i++) {
+
+        // Initial test: Set non-zero energy in a single input region and check
+        // that it is the same at the output (within rounding errors)
+        // Later tests (to be added): repeat the check for multiple regions
+        //
+        //--------------------------------------------------------------------------------------
+        //
+        // Missing Et (Ex, Ey):
+        generateMissingEtTestData(exValue, eyValue, etVector);
+	cout << "Region energy " << etVector.mag << " angle bin " << etVector.phi << endl;
+	cout << "Components ex " << exValue << " ey " << eyValue << endl;
+        //
+        // Fill the Source Card input
+        // Set a single region input
+        unsigned phiRegion = etVector.phi/4;
+        L1GctRegion temp(0, phiRegion%2, etVector.mag, false, false, false, false);
+        if (temp.phi()==0) {
+	  inputRegions[0] = temp;
+	  inputRegions[6] = 0;
+        } else {
+	  inputRegions[0] = 0;
+	  inputRegions[6] = temp;
+        }
+        mySourceCards[(3*(phiRegion/2))+2]->setRegions(inputRegions);
+
+        // Here we fill the expected values
+        exMinusVl += exValue;
+        eyMinusVl += eyValue;
+        etMinusVl += etVector.mag;
       }
-      cout << "Done with missing Et inputs" << endl;
+
       //
+      // Run the processing
       //--------------------------------------------------------------------------------------
       //
-      // Total transverse energy (Et):
-      generateTestData(energyValues, noOfEtValues, energyMax, energySum);
-
-      // Fill the L1GctGlobalEnergyAlgos
-      myGlobalEnergy->setInputWheelEt(0, energyValues[0], false);
-      myGlobalEnergy->setInputWheelEt(1, energyValues[1], false);
-
-      // Test the GetInput... methods
-      if (myGlobalEnergy->getInputEtValPlusWheel().value() != energyValues[0]) { cout << "EtPlus\n" ; testPass = false; }
-      if (myGlobalEnergy->getInputEtVlMinusWheel().value() != energyValues[1]) { cout << "EtMnus\n" ; testPass = false; }
-            
-      // Local storage of the sum
-      if (energySum <= energyMax)
-	{ EtSumResult = energySum; }
-      else
-	{ EtSumResult = (energySum & energyMax); }
-      cout << "Done with total Et inputs" << endl;
+   
+      gct->process();  //Run algorithm
 
       //
+      // Check the input to the final GlobalEnergyAlgos is as expected
       //--------------------------------------------------------------------------------------
       //
-      // Jet energy sums (Ht):
-      generateTestData(energyValues, noOfHtValues, energyMax, energySum);
-
-      // Fill the L1GctGlobalEnergyAlgos
-      myGlobalEnergy->setInputWheelHt(0, energyValues[0], false);
-      myGlobalEnergy->setInputWheelHt(1, energyValues[1], false);
-
-      // Test the GetInput... methods
-      if (myGlobalEnergy->getInputHtValPlusWheel().value() != energyValues[0]) { cout << "HtPlus\n" ;  testPass = false; }
-      if (myGlobalEnergy->getInputHtVlMinusWheel().value() != energyValues[1]) { cout << "HtMnus\n" ;  testPass = false; }
-            
-      // Local storage of the sum
-      if (energySum <= energyMax)
-	{ EtHadResult = energySum; }
-      else
-	{ EtHadResult = (energySum & energyMax); }
-      cout << "Done with total Ht inputs" << endl;
-
-      //
-      //--------------------------------------------------------------------------------------
-      //
-      // Jet counts
-      for (int j=0; j<12; j++) {
-	unsigned total;
-        vector <unsigned> values(2);
-	const unsigned maxvalue=10;
-
-        generateTestData(values, (int) 2, maxvalue, total);
-
-        myGlobalEnergy->setInputWheelJc(0, j, values[0]);
-	myGlobalEnergy->setInputWheelJc(1, j, values[1]);
-
-        if (values[0]>=7) {
-	  values[0] = 7;
-	  total = 31;
-	}
-        if (values[1]>=7) {
-	  values[1] = 7;
-	  total = 31;
-	}
-        if (total>=32) total = 31;
- 
-        if (myGlobalEnergy->getInputJcValPlusWheel(j).value() != values[0]) { cout << "JcPlus\n" ;
-	cout << "Input " << values[0] << " algo " << 
-	  myGlobalEnergy->getInputJcValPlusWheel(j) << endl; testPass = false;}
-        if (myGlobalEnergy->getInputJcVlMinusWheel(j).value() != values[1]) { cout << "JcMnus\n" ; testPass = false;}
-
-        JcResult[j] = total;
-      }
-      cout << "Done with jet count inputs" << endl;
-
+      if (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl) { testPass = false; }
+      if (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal) { testPass = false; }
+      if (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl) { testPass = false; }
+      if (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal) { testPass = false; }
+      if (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl) { testPass = false; }
+      if (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal) { testPass = false; }
+   
       if(testPass == false)
 	{
+	  cout << *myGlobalEnergy << endl;
 	  return "Test class has failed initial data input/output comparison!";
 	}
       //
       //--------------------------------------------------------------------------------------
       //
    
-      gct->process();  //Run algorithm
-      cout << "Done with processing" << endl;
+      cout << "Ex, Ey input values" << endl;
+      cout << "Minus wheel Ex 0 " << gct->getWheelEnergyFpgas()[0]->getInputEx(0) << endl;
+      cout << "Minus wheel Ex 1 " << gct->getWheelEnergyFpgas()[0]->getInputEx(1) << endl;
+      cout << "Minus wheel Ex 2 " << gct->getWheelEnergyFpgas()[0]->getInputEx(2) << endl;
+      cout << " Plus wheel Ex 0 " << gct->getWheelEnergyFpgas()[1]->getInputEx(0) << endl;
+      cout << " Plus wheel Ex 1 " << gct->getWheelEnergyFpgas()[1]->getInputEx(1) << endl;
+      cout << " Plus wheel Ex 2 " << gct->getWheelEnergyFpgas()[1]->getInputEx(2) << endl;
+      cout << "Minus wheel Ey 0 " << gct->getWheelEnergyFpgas()[0]->getInputEy(0) << endl;
+      cout << "Minus wheel Ey 1 " << gct->getWheelEnergyFpgas()[0]->getInputEy(1) << endl;
+      cout << "Minus wheel Ey 2 " << gct->getWheelEnergyFpgas()[0]->getInputEy(2) << endl;
+      cout << " Plus wheel Ey 0 " << gct->getWheelEnergyFpgas()[1]->getInputEy(0) << endl;
+      cout << " Plus wheel Ey 1 " << gct->getWheelEnergyFpgas()[1]->getInputEy(1) << endl;
+      cout << " Plus wheel Ey 2 " << gct->getWheelEnergyFpgas()[1]->getInputEy(2) << endl;
+      cout << "Minus wheel Et 0 " << gct->getWheelEnergyFpgas()[0]->getInputEt(0) << endl;
+      cout << "Minus wheel Et 1 " << gct->getWheelEnergyFpgas()[0]->getInputEt(1) << endl;
+      cout << "Minus wheel Et 2 " << gct->getWheelEnergyFpgas()[0]->getInputEt(2) << endl;
+      cout << " Plus wheel Et 0 " << gct->getWheelEnergyFpgas()[1]->getInputEt(0) << endl;
+      cout << " Plus wheel Et 1 " << gct->getWheelEnergyFpgas()[1]->getInputEt(1) << endl;
+      cout << " Plus wheel Et 2 " << gct->getWheelEnergyFpgas()[1]->getInputEt(2) << endl;
+      cout << endl;
+      cout << "Minus wheel Ex total " << myGlobalEnergy->getInputExVlMinusWheel() << endl;
+      cout << " Plus wheel Ex total " << myGlobalEnergy->getInputExValPlusWheel() << endl;
+      cout << "Minus wheel Ey total " << myGlobalEnergy->getInputEyVlMinusWheel() << endl;
+      cout << " Plus wheel Ey total " << myGlobalEnergy->getInputEyValPlusWheel() << endl;
+      cout << "Minus wheel Et total " << myGlobalEnergy->getInputEtVlMinusWheel() << endl;
+      cout << " Plus wheel Et total " << myGlobalEnergy->getInputEtValPlusWheel() << endl;
+      cout << endl;
+      cout << "Output Et Miss       " << myGlobalEnergy->getEtMiss() << endl;
+      cout << "Output Et Miss angle " << myGlobalEnergy->getEtMissPhi() << endl;
+      cout << "Output Et Total      " << myGlobalEnergy->getEtSum() << endl;
+      cout << endl;
+      cout << "Values loaded magnitude " << etVector.mag << " angle bin " << etVector.phi << endl;
+      cout << endl;
 
       //
       //--------------------------------------------------------------------------------------
@@ -250,20 +241,21 @@ string classTest()
         phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy->getEtMissPhi().value());
         if (phDiff>60) {phDiff=72-phDiff;}
         //
-        etMargin = max((etVector.mag/100), (unsigned) 1) + 2;
-        phMargin = (30/etVector.mag) + 1;
-        if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss" << endl; testPass = false;}
+        etMargin = max((etVector.mag/100), (unsigned) 1) + 5;
+        phMargin = (30/etVector.mag) + 3;
+        if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss diff "
+                                                    << etDiff << " phi diff " << phDiff << endl; testPass = false;}
       }
-      // Check the other output values
-      if (myGlobalEnergy->getEtSum().value() != EtSumResult) {cout << "Algo etSum" << endl; testPass = false;}
-      if (myGlobalEnergy->getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
-      cout << "Expected " << EtHadResult << " found " << myGlobalEnergy->getEtHad() << endl; testPass = false;}
-      for (int j=0 ; j<12 ; j++) {
-        if (myGlobalEnergy->getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
-      cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy->getJetCount(j) << endl; 
-      cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl; 
-      cout << "PlusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl; testPass = false;}
-      }
+//       // Check the other output values
+//       if (myGlobalEnergy->getEtSum().value() != EtSumResult) {cout << "Algo etSum" << endl; testPass = false;}
+//       if (myGlobalEnergy->getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
+//       cout << "Expected " << EtHadResult << " found " << myGlobalEnergy->getEtHad() << endl; testPass = false;}
+//       for (int j=0 ; j<12 ; j++) {
+//         if (myGlobalEnergy->getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
+//       cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy->getJetCount(j) << endl; 
+//       cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl; 
+//       cout << "PlusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl; testPass = false;}
+//       }
     
       //
       //--------------------------------------------------------------------------------------
@@ -272,7 +264,7 @@ string classTest()
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
-	  cout << *myGlobalEnergy << endl;
+// 	  cout << *myGlobalEnergy << endl;
 	  return "Test class has failed algorithm processing!";
 	}
     }
