@@ -2,6 +2,9 @@
 <use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
 
+<bin name=testGctMap file=testGctMap.cpp>
+</bin>
+
 <bin name=testJets file=testJets.cpp>
 </bin>
 
@@ -14,8 +17,8 @@
 <bin name=testJetFinder file=testJetFinder.cpp>
 </bin>
 
-#<bin name=testElectronSorter file=testElectronSorter.cpp>
-#</bin>
+<bin name=testElectronSorter file=testElectronSorter.cpp>
+</bin>
 
 <bin name=testEnergyAlgos file=testEnergyAlgos.cpp>
 </bin>
