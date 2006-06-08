@@ -21,6 +21,7 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
 
 // //Custom headers needed for this test
+#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctMap.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctRegion.h"
 // #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctEtTypes.h"
@@ -112,6 +113,9 @@ string classTest()
 
   const int maxTests=100000;
   const int initialTests=10;
+ 
+  // For (eta,phi) mapping of input regions
+  L1GctMap* map = L1GctMap::getMap();
 
   // Initialise the gct
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false);
@@ -120,7 +124,7 @@ string classTest()
 
   // Initialise my input regions
   for (int i=0; i<noOfInputRegions; i++) {
-    inputRegions.push_back(L1GctRegion(0, 0, 0, false, false, false, false));
+    inputRegions.push_back(L1GctRegion());
   }
 
   for (int t=0; t<maxTests; t++)
@@ -152,8 +156,8 @@ string classTest()
         // Fill the Source Card input
         // Set a single region input
         unsigned phiRegion = etVector.phi/4;
-        L1GctRegion temp(0, phiRegion%2, etVector.mag, false, false, false, false);
-        if (temp.phi()==0) {
+        L1GctRegion temp(map->id(11,phiRegion), etVector.mag, false, false, false, false);
+        if ((temp.phi()%2)==0) {
 	  inputRegions[0] = temp;
 	  inputRegions[6] = 0;
         } else {
