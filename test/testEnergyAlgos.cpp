@@ -112,7 +112,7 @@ string classTest()
   unsigned etMargin, phMargin;
 
   const int maxTests=100000;
-  const int initialTests=10;
+  const int initialTests=100;
  
   // For (eta,phi) mapping of input regions
   L1GctMap* map = L1GctMap::getMap();
@@ -139,6 +139,8 @@ string classTest()
       exMinusVl = 0;
       eyMinusVl = 0;
       etMinusVl = 0;
+
+      etOvflo = false;
 
       for (int i=0; i<(t<initialTests ? 1 : 0); i++) {
 
@@ -183,10 +185,11 @@ string classTest()
       // Check the input to the final GlobalEnergyAlgos is as expected
       //--------------------------------------------------------------------------------------
       //
-      if (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl) { testPass = false; }
-      if (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal) { testPass = false; }
-      if (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl) { testPass = false; }
-      if (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal) { testPass = false; }
+      int exyMargin = 3;
+      if (abs(myGlobalEnergy->getInputExVlMinusWheel().value()-exMinusVl)>exyMargin) { testPass = false; }
+      if (abs(myGlobalEnergy->getInputExValPlusWheel().value()-exPlusVal)>exyMargin) { testPass = false; }
+      if (abs(myGlobalEnergy->getInputEyVlMinusWheel().value()-eyMinusVl)>exyMargin) { testPass = false; }
+      if (abs(myGlobalEnergy->getInputEyValPlusWheel().value()-eyPlusVal)>exyMargin) { testPass = false; }
       if (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl) { testPass = false; }
       if (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal) { testPass = false; }
    
@@ -297,6 +300,9 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   unsigned dummySum;
   float p,r,s;
   float Emag, Ephi;
+  float pbin;
+
+  const float nbins = 18.;
 
   // Generate a pair of uniform pseudo-random integers
   generateTestData(components, (int) 2, rmax, dummySum);
@@ -309,11 +315,13 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   r = float(rmax);
   s = r/float(components[0]);
   p = float(components[1])/r;
+  // Force phi value into the centre of a bin
+  pbin = (float(int(nbins*p))+0.501)/nbins;
   Emag = sigma*sqrt(2.*log(s));
-  Ephi = 6.2831854*p;
+  Ephi = 6.2831854*pbin;
   //
   Et.mag = int (Emag);
-  Et.phi = int (72.*p);
+  Et.phi = int (72.*pbin);
   Ex = int (Emag*cos(Ephi));
   Ey = int (Emag*sin(Ephi));
 }
