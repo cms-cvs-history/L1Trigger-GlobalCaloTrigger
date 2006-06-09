@@ -47,6 +47,7 @@ string classTest();
 /// Generates test data for missing Et both as (x,y) components and
 /// 2-vector (magnitude, direction)
 void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
+int etComponent(const unsigned Emag, const unsigned fact);
 /// Generates test data consisting of energies to be added together with their sum
 void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
 
@@ -106,8 +107,16 @@ string classTest()
   int eyPlusVal, eyMinusVl;
   unsigned etPlusVal, etMinusVl;
   int exValue, eyValue;
-  etmiss_vec etVector;
-  bool etOvflo;
+  int exTotal, eyTotal;
+  unsigned etTotal;
+  etmiss_vec etVector, etResult;
+
+  bool inPlusOverFlow, inMinusOvrFlow;
+  bool exPlusOverFlow, eyPlusOverFlow, etPlusOverFlow;
+  bool exMinusOvrFlow, eyMinusOvrFlow, etMinusOvrFlow;
+  bool exTotalOvrFlow, eyTotalOvrFlow, etTotalOvrFlow;
+  bool etMissOverFlow;
+
   unsigned etDiff, phDiff;
   unsigned etMargin, phMargin;
 
@@ -140,25 +149,27 @@ string classTest()
       eyMinusVl = 0;
       etMinusVl = 0;
 
-      etOvflo = false;
+      inPlusOverFlow = false;
+      inMinusOvrFlow = false;
 
+      etResult.mag = 0;
+      etResult.phi = 0;
       for (int i=0; i<(t<initialTests ? 1 : 0); i++) {
-
-        // Initial test: Set non-zero energy in a single input region and check
-        // that it is the same at the output (within rounding errors)
-        // Later tests (to be added): repeat the check for multiple regions
-        //
-        //--------------------------------------------------------------------------------------
-        //
-        // Missing Et (Ex, Ey):
         generateMissingEtTestData(exValue, eyValue, etVector);
+	// in this case (where there is only one non-zero region input) ...
+	etResult = etVector;
+	// ... but in general, we will need to calcualte the final etResult
+	// from the final exTotal and eyTotal
+
 	cout << "Region energy " << etVector.mag << " angle bin " << etVector.phi << endl;
 	cout << "Components ex " << exValue << " ey " << eyValue << endl;
         //
         // Fill the Source Card input
         // Set a single region input
+	unsigned etaRegion = 11;
         unsigned phiRegion = etVector.phi/4;
-        L1GctRegion temp(map->id(11,phiRegion), etVector.mag, false, false, false, false);
+        
+        L1GctRegion temp(map->id(etaRegion,phiRegion), etVector.mag, false, false, false, false);
         if ((temp.phi()%2)==0) {
 	  inputRegions[0] = temp;
 	  inputRegions[6] = 0;
@@ -172,7 +183,25 @@ string classTest()
         exMinusVl += exValue;
         eyMinusVl += eyValue;
         etMinusVl += etVector.mag;
-      }
+ 	inMinusOvrFlow |= (etVector.mag>=0x400);
+     }
+      exMinusOvrFlow = (exMinusVl<-2048) || (exMinusVl>=2048) || inMinusOvrFlow;
+      eyMinusOvrFlow = (eyMinusVl<-2048) || (eyMinusVl>=2048) || inMinusOvrFlow;
+      etMinusOvrFlow = (etMinusVl>=4096) || inMinusOvrFlow;
+
+      exPlusOverFlow = (exPlusVal<-2048) || (exPlusVal>=2048) || inPlusOverFlow;
+      eyPlusOverFlow = (eyPlusVal<-2048) || (eyPlusVal>=2048) || inPlusOverFlow;
+      etPlusOverFlow = (etPlusVal>=4096) || inPlusOverFlow;
+
+      exTotal = exMinusVl + exPlusVal;
+      eyTotal = eyMinusVl + eyPlusVal;
+      etTotal = etMinusVl + etPlusVal;
+
+      exTotalOvrFlow = (exTotal<-2048) || (exTotal>=2048) || exMinusOvrFlow || exPlusOverFlow;
+      eyTotalOvrFlow = (eyTotal<-2048) || (eyTotal>=2048) || eyMinusOvrFlow || eyPlusOverFlow;
+      etTotalOvrFlow = (etTotal>=4096) || etMinusOvrFlow  || etPlusOverFlow;
+
+      etMissOverFlow = exTotalOvrFlow || eyTotalOvrFlow;
 
       //
       // Run the processing
@@ -185,19 +214,60 @@ string classTest()
       // Check the input to the final GlobalEnergyAlgos is as expected
       //--------------------------------------------------------------------------------------
       //
-      int exyMargin = 3;
-      if (abs(myGlobalEnergy->getInputExVlMinusWheel().value()-exMinusVl)>exyMargin) { testPass = false; }
-      if (abs(myGlobalEnergy->getInputExValPlusWheel().value()-exPlusVal)>exyMargin) { testPass = false; }
-      if (abs(myGlobalEnergy->getInputEyVlMinusWheel().value()-eyMinusVl)>exyMargin) { testPass = false; }
-      if (abs(myGlobalEnergy->getInputEyValPlusWheel().value()-eyPlusVal)>exyMargin) { testPass = false; }
-      if (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl) { testPass = false; }
-      if (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal) { testPass = false; }
+      if (!myGlobalEnergy->getInputExVlMinusWheel().overFlow() && !exMinusOvrFlow &&
+	    (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl)) { testPass = false; }
+      if (!myGlobalEnergy->getInputExValPlusWheel().overFlow() && !exPlusOverFlow &&
+	    (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal)) { testPass = false; }
+      if (!myGlobalEnergy->getInputEyVlMinusWheel().overFlow() && !eyMinusOvrFlow &&
+	    (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl)) { testPass = false; }
+      if (!myGlobalEnergy->getInputEyValPlusWheel().overFlow() && !eyPlusOverFlow &&
+	    (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal)) { testPass = false; }
+      if (!myGlobalEnergy->getInputEtVlMinusWheel().overFlow() && !etMinusOvrFlow &&
+	    (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl)) { testPass = false; }
+      if (!myGlobalEnergy->getInputEtValPlusWheel().overFlow() && !etPlusOverFlow &&
+	    (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal)) { testPass = false; }
    
       if(testPass == false)
 	{
 	  cout << *myGlobalEnergy << endl;
 	  return "Test class has failed initial data input/output comparison!";
 	}
+      //
+      //--------------------------------------------------------------------------------------
+      //
+      // Check the missing Et calculation. Allow some margin for the
+      // integer calculation of missing Et.
+      if (!etMissOverFlow && !myGlobalEnergy->getEtMiss().overFlow()) {
+        etDiff = (unsigned) abs((long int) etResult.mag - (long int) myGlobalEnergy->getEtMiss().value());
+        phDiff = (unsigned) abs((long int) etResult.phi - (long int) myGlobalEnergy->getEtMissPhi().value());
+        if (phDiff>60) {phDiff=72-phDiff;}
+        //
+        etMargin = max((etResult.mag/100), (unsigned) 1) + 2;
+        if (etResult.mag==0) { phMargin = 72; } else { phMargin = (30/etResult.mag) + 1; }
+//         phMargin = 99;
+        if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss diff "
+                                                    << etDiff << " phi diff " << phDiff << endl; testPass = false;}
+      }
+//       // Check the other output values
+      if (!myGlobalEnergy->getEtSum().overFlow() && !etTotalOvrFlow &&
+          (myGlobalEnergy->getEtSum().value() != etTotal)) {cout << "Algo etSum" << endl; testPass = false;}
+//       if (myGlobalEnergy->getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
+//       cout << "Expected " << EtHadResult << " found " << myGlobalEnergy->getEtHad() << endl; testPass = false;}
+//       for (int j=0 ; j<12 ; j++) {
+//         if (myGlobalEnergy->getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
+//       cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy->getJetCount(j) << endl; 
+//       cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl; 
+//       cout << "PlusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl; testPass = false;}
+//       }
+    
+      //
+      //--------------------------------------------------------------------------------------
+      //
+    
+      if(testPass == false)
+	{
+	  // Print failed events for debug purposes
+// 	  cout << *myGlobalEnergy << endl;
       //
       //--------------------------------------------------------------------------------------
       //
@@ -233,45 +303,9 @@ string classTest()
       cout << "Output Et Miss angle " << myGlobalEnergy->getEtMissPhi() << endl;
       cout << "Output Et Total      " << myGlobalEnergy->getEtSum() << endl;
       cout << endl;
-      cout << "Values loaded magnitude " << etVector.mag << " angle bin " << etVector.phi << endl;
+      cout << "Values loaded magnitude " << etResult.mag << " angle bin " << etResult.phi << endl;
       cout << endl;
 
-      //
-      //--------------------------------------------------------------------------------------
-      //
-      // Check the missing Et calculation. Allow some margin for the
-      // integer calculation of missing Et.
-      if (etOvflo) {
-	if (!myGlobalEnergy->getEtMiss().overFlow()) {testPass = false;}
-      } else {
-        etDiff = (unsigned) abs((long int) etVector.mag - (long int) myGlobalEnergy->getEtMiss().value());
-        phDiff = (unsigned) abs((long int) etVector.phi - (long int) myGlobalEnergy->getEtMissPhi().value());
-        if (phDiff>60) {phDiff=72-phDiff;}
-        //
-        etMargin = max((etVector.mag/100), (unsigned) 1) + 5;
-        phMargin = (30/etVector.mag) + 3;
-        if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss diff "
-                                                    << etDiff << " phi diff " << phDiff << endl; testPass = false;}
-      }
-//       // Check the other output values
-//       if (myGlobalEnergy->getEtSum().value() != EtSumResult) {cout << "Algo etSum" << endl; testPass = false;}
-//       if (myGlobalEnergy->getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
-//       cout << "Expected " << EtHadResult << " found " << myGlobalEnergy->getEtHad() << endl; testPass = false;}
-//       for (int j=0 ; j<12 ; j++) {
-//         if (myGlobalEnergy->getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
-//       cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy->getJetCount(j) << endl; 
-//       cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl; 
-//       cout << "PlusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl; testPass = false;}
-//       }
-    
-      //
-      //--------------------------------------------------------------------------------------
-      //
-    
-      if(testPass == false)
-	{
-	  // Print failed events for debug purposes
-// 	  cout << *myGlobalEnergy << endl;
 	  return "Test class has failed algorithm processing!";
 	}
     }
@@ -299,8 +333,7 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   vector<unsigned> components(2);
   unsigned dummySum;
   float p,r,s;
-  float Emag, Ephi;
-  float pbin;
+  unsigned Emag, Ephi;
 
   const float nbins = 18.;
 
@@ -316,14 +349,50 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   s = r/float(components[0]);
   p = float(components[1])/r;
   // Force phi value into the centre of a bin
-  pbin = (float(int(nbins*p))+0.501)/nbins;
-  Emag = sigma*sqrt(2.*log(s));
-  Ephi = 6.2831854*pbin;
+  Emag = int(sigma*sqrt(2.*log(s)));
+  Ephi = int(nbins*p);
   //
-  Et.mag = int (Emag);
-  Et.phi = int (72.*pbin);
-  Ex = int (Emag*cos(Ephi));
-  Ey = int (Emag*sin(Ephi));
+  Et.mag = Emag;
+  Et.phi = (4*Ephi)+2;
+
+  Ex = etComponent(Emag, ((2*Ephi)+10)%36);
+  Ey = etComponent(Emag, ((2*Ephi)+1));
+}
+
+int etComponent(const unsigned Emag, const unsigned fact) {
+  // Copy the Ex, Ey conversion from the hardware emulation
+  const unsigned sinFact[10] = {0, 44, 87, 128, 164, 196, 221, 240, 252, 256};
+  unsigned myFact;
+  bool negativeResult;
+  int result;
+  switch (fact/9) {
+  case 0:
+    myFact = sinFact[fact];
+    negativeResult = false;
+    break;
+  case 1:
+    myFact = sinFact[(18-fact)];
+    negativeResult = false;
+    break;
+  case 2:
+    myFact = sinFact[(fact-18)];
+    negativeResult = true;
+    break;
+  case 3:
+    myFact = sinFact[(36-fact)];
+    negativeResult = true;
+    break;
+  default:
+    cout << "Invalid factor " << fact << endl;
+    return 0;
+  }
+  result = static_cast<int>(Emag*myFact);
+  if ( negativeResult ) {
+    result = (1<<24)-result;
+    result = result>>8;
+    result = result-(1<<16);
+  } else { result = result>>8; }
+  return result;
 }
 
 
