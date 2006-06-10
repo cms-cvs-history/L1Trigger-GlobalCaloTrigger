@@ -166,18 +166,19 @@ string classTest()
         //
         // Fill the Source Card input
         // Set a single region input
-	unsigned etaRegion = 11;
+	unsigned etaRegion = 10;
         unsigned phiRegion = etVector.phi/4;
         
         L1GctRegion temp(map->id(etaRegion,phiRegion), etVector.mag, false, false, false, false);
-        if ((temp.phi()%2)==0) {
-	  inputRegions[0] = temp;
-	  inputRegions[6] = 0;
-        } else {
-	  inputRegions[0] = 0;
-	  inputRegions[6] = temp;
-        }
-        mySourceCards[(3*(phiRegion/2))+2]->setRegions(inputRegions);
+	//        if ((temp.phi()%2)==0) {
+	//inputRegions[0] = temp;
+	//inputRegions[6] = 0;
+        //} else {
+	//inputRegions[0] = 0;
+	//inputRegions[6] = temp;
+        //}
+        //mySourceCards[(3*(phiRegion/2))+2]->setRegions(inputRegions);
+	gct->setRegion(temp);
 
         // Here we fill the expected values
         exMinusVl += exValue;
