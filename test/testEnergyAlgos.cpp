@@ -37,7 +37,7 @@ using namespace std;
 
 // //Typedefs for the vector templates used
         struct etmiss_vec { unsigned mag; unsigned phi;};
-typedef vector<L1GctRegion> RegionsVector;
+// typedef vector<L1GctRegion> RegionsVector;
 // typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
@@ -48,6 +48,7 @@ string classTest();
 /// 2-vector (magnitude, direction)
 void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
 int etComponent(const unsigned Emag, const unsigned fact);
+etmiss_vec trueMissingEt(const int ex, const int ey);
 /// Generates test data consisting of energies to be added together with their sum
 void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
 
@@ -83,25 +84,17 @@ int main(int argc, char **argv)
 string classTest()
 {
   L1GctGlobalEnergyAlgos* myGlobalEnergy;
-  vector<L1GctSourceCard*> mySourceCards;
 
   bool testPass = true;       //Test passing flag.
     
-  RegionsVector inputRegions;
-  const int noOfInputRegions=10;
-
-//   const int noOfEtValues=2;
-//   const int noOfHtValues=2;
   const int maxValues=3;
   vector<unsigned> energyValues(maxValues);
-//   unsigned energySum;
-
-//   unsigned EtSumResult;
-//   unsigned EtHadResult;
   vector<unsigned> JcResult(12);
 
-//   const int nbitsEt=12;
-//   const unsigned energyMax=((1<<nbitsEt) - 1);
+  vector <unsigned>etStripSums(36);
+
+  vector<int> exLeafSums(6);
+  vector<int> eyLeafSums(6);
 
   int exPlusVal, exMinusVl;
   int eyPlusVal, eyMinusVl;
@@ -120,7 +113,7 @@ string classTest()
   unsigned etDiff, phDiff;
   unsigned etMargin, phMargin;
 
-  const int maxTests=100000;
+  const int maxTests=10000;
   const int initialTests=100;
  
   // For (eta,phi) mapping of input regions
@@ -129,18 +122,15 @@ string classTest()
   // Initialise the gct
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false);
   myGlobalEnergy = gct->getEnergyFinalStage();
-  mySourceCards  = gct->getSourceCards();
-
-  // Initialise my input regions
-  for (int i=0; i<noOfInputRegions; i++) {
-    inputRegions.push_back(L1GctRegion());
-  }
 
   for (int t=0; t<maxTests; t++)
     {
       if (t<initialTests) { cout << "Test " << t << endl; }
       // Initialise the gct
       gct->reset();
+
+      for (int i=0; i<36; i++) { etStripSums[i]=0; }
+      for (int i=0; i<6; i++) { exLeafSums[i]=0; eyLeafSums[i]=0; }
 
       exPlusVal = 0;
       eyPlusVal = 0;
@@ -154,42 +144,67 @@ string classTest()
 
       etResult.mag = 0;
       etResult.phi = 0;
-      for (int i=0; i<(t<initialTests ? 1 : 0); i++) {
+      // For initial tests just try things out with one region input
+      // Then test with summing multiple regions. Choose one value
+      // of energy and phi for each eta to avoid trying to set the
+      // same region several times.
+      for (int i=0; i<(t<initialTests ? 1 : 22); i++) {
         generateMissingEtTestData(exValue, eyValue, etVector);
-	// in this case (where there is only one non-zero region input) ...
-	etResult = etVector;
-	// ... but in general, we will need to calcualte the final etResult
-	// from the final exTotal and eyTotal
-
-	cout << "Region energy " << etVector.mag << " angle bin " << etVector.phi << endl;
-	cout << "Components ex " << exValue << " ey " << eyValue << endl;
         //
-        // Fill the Source Card input
         // Set a single region input
-	unsigned etaRegion = 10;
+	unsigned etaRegion = i;
         unsigned phiRegion = etVector.phi/4;
         
         L1GctRegion temp(map->id(etaRegion,phiRegion), etVector.mag, false, false, false, false);
-	//        if ((temp.phi()%2)==0) {
-	//inputRegions[0] = temp;
-	//inputRegions[6] = 0;
-        //} else {
-	//inputRegions[0] = 0;
-	//inputRegions[6] = temp;
-        //}
-        //mySourceCards[(3*(phiRegion/2))+2]->setRegions(inputRegions);
 	gct->setRegion(temp);
 
         // Here we fill the expected values
-        exMinusVl += exValue;
-        eyMinusVl += eyValue;
-        etMinusVl += etVector.mag;
- 	inMinusOvrFlow |= (etVector.mag>=0x400);
-     }
+	if (etaRegion<11) {
+	  etStripSums[phiRegion] += etVector.mag;
+	  inMinusOvrFlow |= (etVector.mag>=0x400);
+	} else {
+	  etStripSums[phiRegion+18] += etVector.mag;
+	  inPlusOverFlow |= (etVector.mag>=0x400);
+	}
+
+      }
+
+      // Find the expected sums
+      int strip = 0;
+      for (int leaf=0; leaf<3; leaf++) {
+	for (int i=0; i<6; i++) {
+	  unsigned et = etStripSums[strip];
+	  int ex = etComponent(et, ((2*strip+10)%36) );
+	  int ey = etComponent(et, ((2*strip+1 )%36) );
+	  strip++;
+
+	  exMinusVl += ex;
+	  eyMinusVl += ey;
+	  etMinusVl += et; 
+
+	  exLeafSums[leaf] += ex;
+	  eyLeafSums[leaf] += ey;
+	}
+      }
       exMinusOvrFlow = (exMinusVl<-2048) || (exMinusVl>=2048) || inMinusOvrFlow;
       eyMinusOvrFlow = (eyMinusVl<-2048) || (eyMinusVl>=2048) || inMinusOvrFlow;
       etMinusOvrFlow = (etMinusVl>=4096) || inMinusOvrFlow;
 
+      for (int leaf=3; leaf<6; leaf++) {
+	for (int i=0; i<6; i++) {
+	  unsigned et = etStripSums[strip];
+	  int ex = etComponent(et, ((2*strip+10)%36) );
+	  int ey = etComponent(et, ((2*strip+1 )%36) );
+	  strip++;
+
+	  exPlusVal += ex;
+	  eyPlusVal += ey;
+	  etPlusVal += et; 
+
+	  exLeafSums[leaf] += ex;
+	  eyLeafSums[leaf] += ey;
+	}
+      }
       exPlusOverFlow = (exPlusVal<-2048) || (exPlusVal>=2048) || inPlusOverFlow;
       eyPlusOverFlow = (eyPlusVal<-2048) || (eyPlusVal>=2048) || inPlusOverFlow;
       etPlusOverFlow = (etPlusVal>=4096) || inPlusOverFlow;
@@ -197,6 +212,8 @@ string classTest()
       exTotal = exMinusVl + exPlusVal;
       eyTotal = eyMinusVl + eyPlusVal;
       etTotal = etMinusVl + etPlusVal;
+
+      etResult = trueMissingEt(exTotal, eyTotal);
 
       exTotalOvrFlow = (exTotal<-2048) || (exTotal>=2048) || exMinusOvrFlow || exPlusOverFlow;
       eyTotalOvrFlow = (eyTotal<-2048) || (eyTotal>=2048) || eyMinusOvrFlow || eyPlusOverFlow;
@@ -216,17 +233,17 @@ string classTest()
       //--------------------------------------------------------------------------------------
       //
       if (!myGlobalEnergy->getInputExVlMinusWheel().overFlow() && !exMinusOvrFlow &&
-	    (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl)) { testPass = false; }
+	  (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl)) { cout << "ex Minus " << exMinusVl <<endl; testPass = false; }
       if (!myGlobalEnergy->getInputExValPlusWheel().overFlow() && !exPlusOverFlow &&
-	    (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal)) { testPass = false; }
+	  (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal)) { cout << "ex Plus " << exPlusVal <<endl; testPass = false; }
       if (!myGlobalEnergy->getInputEyVlMinusWheel().overFlow() && !eyMinusOvrFlow &&
-	    (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl)) { testPass = false; }
+	  (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl)) { cout << "ey Minus " << eyMinusVl <<endl; testPass = false; }
       if (!myGlobalEnergy->getInputEyValPlusWheel().overFlow() && !eyPlusOverFlow &&
-	    (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal)) { testPass = false; }
+	  (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal)) { cout << "ey Plus " << eyPlusVal <<endl; testPass = false; }
       if (!myGlobalEnergy->getInputEtVlMinusWheel().overFlow() && !etMinusOvrFlow &&
-	    (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl)) { testPass = false; }
+	  (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl)) { cout << "et Minus " << etMinusVl <<endl; testPass = false; }
       if (!myGlobalEnergy->getInputEtValPlusWheel().overFlow() && !etPlusOverFlow &&
-	    (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal)) { testPass = false; }
+	  (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal)) { cout << "et Plus " << etPlusVal <<endl; testPass = false; }
    
       if(testPass == false)
 	{
@@ -245,11 +262,10 @@ string classTest()
         //
         etMargin = max((etResult.mag/100), (unsigned) 1) + 2;
         if (etResult.mag==0) { phMargin = 72; } else { phMargin = (30/etResult.mag) + 1; }
-//         phMargin = 99;
         if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss diff "
                                                     << etDiff << " phi diff " << phDiff << endl; testPass = false;}
       }
-//       // Check the other output values
+      // Check the other output values
       if (!myGlobalEnergy->getEtSum().overFlow() && !etTotalOvrFlow &&
           (myGlobalEnergy->getEtSum().value() != etTotal)) {cout << "Algo etSum" << endl; testPass = false;}
 //       if (myGlobalEnergy->getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
@@ -268,51 +284,13 @@ string classTest()
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
-// 	  cout << *myGlobalEnergy << endl;
-      //
-      //--------------------------------------------------------------------------------------
-      //
-   
-      cout << "Ex, Ey input values" << endl;
-      cout << "Minus wheel Ex 0 " << gct->getWheelEnergyFpgas()[0]->getInputEx(0) << endl;
-      cout << "Minus wheel Ex 1 " << gct->getWheelEnergyFpgas()[0]->getInputEx(1) << endl;
-      cout << "Minus wheel Ex 2 " << gct->getWheelEnergyFpgas()[0]->getInputEx(2) << endl;
-      cout << " Plus wheel Ex 0 " << gct->getWheelEnergyFpgas()[1]->getInputEx(0) << endl;
-      cout << " Plus wheel Ex 1 " << gct->getWheelEnergyFpgas()[1]->getInputEx(1) << endl;
-      cout << " Plus wheel Ex 2 " << gct->getWheelEnergyFpgas()[1]->getInputEx(2) << endl;
-      cout << "Minus wheel Ey 0 " << gct->getWheelEnergyFpgas()[0]->getInputEy(0) << endl;
-      cout << "Minus wheel Ey 1 " << gct->getWheelEnergyFpgas()[0]->getInputEy(1) << endl;
-      cout << "Minus wheel Ey 2 " << gct->getWheelEnergyFpgas()[0]->getInputEy(2) << endl;
-      cout << " Plus wheel Ey 0 " << gct->getWheelEnergyFpgas()[1]->getInputEy(0) << endl;
-      cout << " Plus wheel Ey 1 " << gct->getWheelEnergyFpgas()[1]->getInputEy(1) << endl;
-      cout << " Plus wheel Ey 2 " << gct->getWheelEnergyFpgas()[1]->getInputEy(2) << endl;
-      cout << "Minus wheel Et 0 " << gct->getWheelEnergyFpgas()[0]->getInputEt(0) << endl;
-      cout << "Minus wheel Et 1 " << gct->getWheelEnergyFpgas()[0]->getInputEt(1) << endl;
-      cout << "Minus wheel Et 2 " << gct->getWheelEnergyFpgas()[0]->getInputEt(2) << endl;
-      cout << " Plus wheel Et 0 " << gct->getWheelEnergyFpgas()[1]->getInputEt(0) << endl;
-      cout << " Plus wheel Et 1 " << gct->getWheelEnergyFpgas()[1]->getInputEt(1) << endl;
-      cout << " Plus wheel Et 2 " << gct->getWheelEnergyFpgas()[1]->getInputEt(2) << endl;
-      cout << endl;
-      cout << "Minus wheel Ex total " << myGlobalEnergy->getInputExVlMinusWheel() << endl;
-      cout << " Plus wheel Ex total " << myGlobalEnergy->getInputExValPlusWheel() << endl;
-      cout << "Minus wheel Ey total " << myGlobalEnergy->getInputEyVlMinusWheel() << endl;
-      cout << " Plus wheel Ey total " << myGlobalEnergy->getInputEyValPlusWheel() << endl;
-      cout << "Minus wheel Et total " << myGlobalEnergy->getInputEtVlMinusWheel() << endl;
-      cout << " Plus wheel Et total " << myGlobalEnergy->getInputEtValPlusWheel() << endl;
-      cout << endl;
-      cout << "Output Et Miss       " << myGlobalEnergy->getEtMiss() << endl;
-      cout << "Output Et Miss angle " << myGlobalEnergy->getEtMissPhi() << endl;
-      cout << "Output Et Total      " << myGlobalEnergy->getEtSum() << endl;
-      cout << endl;
-      cout << "Values loaded magnitude " << etResult.mag << " angle bin " << etResult.phi << endl;
-      cout << endl;
-
+	  cout << *myGlobalEnergy << endl;
 	  return "Test class has failed algorithm processing!";
 	}
     }
   // Test the print routine at the end
   cout << *myGlobalEnergy << endl;
-  return "Test class has passed!";        
+  return "Test class has passed!";
 }
 
 // Generates 2-d missing Et vector
@@ -324,7 +302,9 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   //
   // With sigma set to 400 we will always be in the range
   // of 12-bit signed integers (-2048 to 2047).
-  const float sigma=400.;
+  // With sigma set to 200 we are always in the range
+  // of 10-bit input region Et values.
+  const float sigma=200.;
 
   // rmax controls the magnitude range
   // Chosen as a power of two conveniently close to
@@ -396,6 +376,27 @@ int etComponent(const unsigned Emag, const unsigned fact) {
   return result;
 }
 
+/// Calculate the expected missing Et vector for a given
+/// ex and ey sum, for comparison with the hardware
+etmiss_vec trueMissingEt(const int ex, const int ey) {
+
+  etmiss_vec result;
+
+  double fx = static_cast<double>(ex);
+  double fy = static_cast<double>(ey);
+  double fmag = sqrt(fx*fx + fy*fy);
+  double fphi = 36.*atan2(fy, fx)/3.1415927;
+
+  result.mag = static_cast<int>(fmag);
+  if (fphi>=0) {
+    result.phi = static_cast<int>(fphi);
+  } else {
+    result.phi = static_cast<int>(fphi+72.);
+  }
+
+  return result;
+
+}
 
 
 /// Generates test data consisting of energies to be added together with their sum
