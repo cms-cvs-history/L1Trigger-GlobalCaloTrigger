@@ -18,12 +18,15 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctGlobalEnergyAlgos.h"  //The class to be tested
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelEnergyFpga.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetFinder.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetLeafCard.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetEtCalibrationLut.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
 
-// //Custom headers needed for this test
+//Custom headers needed for this test
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctMap.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctRegion.h"
-// #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetCand.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctEtTypes.h"
 
 //Standard library headers
@@ -35,7 +38,7 @@
 #include <stdexcept> //for std::runtime_error()
 using namespace std;
 
-// //Typedefs for the vector templates used
+//Typedefs for the vector templates used
         struct etmiss_vec { unsigned mag; unsigned phi;};
 // typedef vector<L1GctRegion> RegionsVector;
 // typedef vector<L1GctJet> JetsVector;
@@ -47,10 +50,16 @@ string classTest();
 /// Generates test data for missing Et both as (x,y) components and
 /// 2-vector (magnitude, direction)
 void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
+/// Integer calculation of Ex or Ey from magnitude for a given phi bin
 int etComponent(const unsigned Emag, const unsigned fact);
+/// Calculate et vector from ex and ey, using floating arithmetic and conversion back to integer
 etmiss_vec trueMissingEt(const int ex, const int ey);
 /// Generates test data consisting of energies to be added together with their sum
 void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
+/// Checks the Ht calculation in a leaf card and returns the Ht sum
+bool checkHt(L1GctJetLeafCard* jlc, unsigned &leafHt);
+/// Works out the Ht for a jet from the raw input regions
+unsigned jetHtSum(L1GctJetFinder* jf, int jn);
 
 // /// Loads test input regions and also the known results from a text file.
 // void loadTestData(RegionsVector &regions, JetsVector &jets, const string &fileName);
@@ -93,21 +102,19 @@ string classTest()
 
   vector <unsigned>etStripSums(36);
 
-  vector<int> exLeafSums(6);
-  vector<int> eyLeafSums(6);
-
   int exPlusVal, exMinusVl;
   int eyPlusVal, eyMinusVl;
   unsigned etPlusVal, etMinusVl;
+  unsigned htPlusVal, htMinusVl;
   int exValue, eyValue;
   int exTotal, eyTotal;
-  unsigned etTotal;
+  unsigned etTotal, htTotal;
   etmiss_vec etVector, etResult;
 
   bool inPlusOverFlow, inMinusOvrFlow;
-  bool exPlusOverFlow, eyPlusOverFlow, etPlusOverFlow;
-  bool exMinusOvrFlow, eyMinusOvrFlow, etMinusOvrFlow;
-  bool exTotalOvrFlow, eyTotalOvrFlow, etTotalOvrFlow;
+  bool exPlusOverFlow, eyPlusOverFlow, etPlusOverFlow, htPlusOverFlow;
+  bool exMinusOvrFlow, eyMinusOvrFlow, etMinusOvrFlow, htMinusOvrFlow;
+  bool exTotalOvrFlow, eyTotalOvrFlow, etTotalOvrFlow, htTotalOvrFlow;
   bool etMissOverFlow;
 
   unsigned etDiff, phDiff;
@@ -130,17 +137,20 @@ string classTest()
       gct->reset();
 
       for (int i=0; i<36; i++) { etStripSums[i]=0; }
-      for (int i=0; i<6; i++) { exLeafSums[i]=0; eyLeafSums[i]=0; }
 
       exPlusVal = 0;
       eyPlusVal = 0;
       etPlusVal = 0;
+      htPlusVal = 0;
       exMinusVl = 0;
       eyMinusVl = 0;
       etMinusVl = 0;
+      htMinusVl = 0;
 
       inPlusOverFlow = false;
       inMinusOvrFlow = false;
+      htPlusOverFlow = false;
+      htMinusOvrFlow = false;
 
       etResult.mag = 0;
       etResult.phi = 0;
@@ -173,7 +183,7 @@ string classTest()
       int strip = 0;
       for (int leaf=0; leaf<3; leaf++) {
 	for (int i=0; i<6; i++) {
-	  unsigned et = etStripSums[strip];
+	  unsigned et = etStripSums.at(strip);
 	  int ex = etComponent(et, ((2*strip+10)%36) );
 	  int ey = etComponent(et, ((2*strip+1 )%36) );
 	  strip++;
@@ -181,9 +191,6 @@ string classTest()
 	  exMinusVl += ex;
 	  eyMinusVl += ey;
 	  etMinusVl += et; 
-
-	  exLeafSums[leaf] += ex;
-	  eyLeafSums[leaf] += ey;
 	}
       }
       exMinusOvrFlow = (exMinusVl<-2048) || (exMinusVl>=2048) || inMinusOvrFlow;
@@ -192,7 +199,7 @@ string classTest()
 
       for (int leaf=3; leaf<6; leaf++) {
 	for (int i=0; i<6; i++) {
-	  unsigned et = etStripSums[strip];
+	  unsigned et = etStripSums.at(strip);
 	  int ex = etComponent(et, ((2*strip+10)%36) );
 	  int ey = etComponent(et, ((2*strip+1 )%36) );
 	  strip++;
@@ -200,9 +207,6 @@ string classTest()
 	  exPlusVal += ex;
 	  eyPlusVal += ey;
 	  etPlusVal += et; 
-
-	  exLeafSums[leaf] += ex;
-	  eyLeafSums[leaf] += ey;
 	}
       }
       exPlusOverFlow = (exPlusVal<-2048) || (exPlusVal>=2048) || inPlusOverFlow;
@@ -229,6 +233,28 @@ string classTest()
       gct->process();  //Run algorithm
 
       //
+      // Check the Ht calculation (starting from the found jets)
+      //--------------------------------------------------------------------------------------
+      //
+      // Minus Wheel
+      for (int leaf=0; leaf<3; leaf++) {
+	unsigned ht;
+	if (checkHt(gct->getJetLeafCards().at(leaf), ht)) {
+	  htMinusVl += ht;
+	} else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
+      }
+      // Plus Wheel
+      for (int leaf=3; leaf<6; leaf++) {
+	unsigned ht = 0;
+	if (checkHt(gct->getJetLeafCards().at(leaf), ht)) {
+	  htPlusVal += ht;
+	} else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
+      }
+      htMinusOvrFlow = (htMinusVl>=4096);
+      htPlusOverFlow = (htPlusVal>=4096);
+      htTotal = htMinusVl + htPlusVal;
+      htTotalOvrFlow = (htTotal>=4096) || htMinusOvrFlow  || htPlusOverFlow;
+      //
       // Check the input to the final GlobalEnergyAlgos is as expected
       //--------------------------------------------------------------------------------------
       //
@@ -244,10 +270,15 @@ string classTest()
 	  (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl)) { cout << "et Minus " << etMinusVl <<endl; testPass = false; }
       if (!myGlobalEnergy->getInputEtValPlusWheel().overFlow() && !etPlusOverFlow &&
 	  (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal)) { cout << "et Plus " << etPlusVal <<endl; testPass = false; }
+      if (!myGlobalEnergy->getInputHtVlMinusWheel().overFlow() && !htMinusOvrFlow &&
+	  (myGlobalEnergy->getInputHtVlMinusWheel().value()!=htMinusVl)) { cout << "ht Minus " << htMinusVl <<endl; testPass = false; }
+      if (!myGlobalEnergy->getInputHtValPlusWheel().overFlow() && !htPlusOverFlow &&
+	  (myGlobalEnergy->getInputHtValPlusWheel().value()!=htPlusVal)) { cout << "ht Plus " << htPlusVal <<endl; testPass = false; }
    
       if(testPass == false)
 	{
 	  cout << *myGlobalEnergy << endl;
+	  cout << "Failed at test number " << t <<endl;
 	  return "Test class has failed initial data input/output comparison!";
 	}
       //
@@ -268,8 +299,8 @@ string classTest()
       // Check the other output values
       if (!myGlobalEnergy->getEtSum().overFlow() && !etTotalOvrFlow &&
           (myGlobalEnergy->getEtSum().value() != etTotal)) {cout << "Algo etSum" << endl; testPass = false;}
-//       if (myGlobalEnergy->getEtHad().value() != EtHadResult) {cout << "Algo etHad" << endl; 
-//       cout << "Expected " << EtHadResult << " found " << myGlobalEnergy->getEtHad() << endl; testPass = false;}
+      if (!myGlobalEnergy->getEtHad().overFlow() && !htTotalOvrFlow &&
+          (myGlobalEnergy->getEtHad().value() != htTotal)) {cout << "Algo etHad" << endl; testPass = false;}
 //       for (int j=0 ; j<12 ; j++) {
 //         if (myGlobalEnergy->getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
 //       cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy->getJetCount(j) << endl; 
@@ -285,6 +316,7 @@ string classTest()
 	{
 	  // Print failed events for debug purposes
 	  cout << *myGlobalEnergy << endl;
+	  cout << "Failed at test number " << t <<endl;
 	  return "Test class has failed algorithm processing!";
 	}
     }
@@ -396,6 +428,60 @@ etmiss_vec trueMissingEt(const int ex, const int ey) {
 
   return result;
 
+}
+
+/// Check the initial Ht calculation
+bool checkHt(L1GctJetLeafCard* jlc, unsigned &leafHt) {
+
+  unsigned result=jlc->getOutputHt().value();
+  unsigned sumHt=0;
+
+  for (int i=0; i<L1GctJetFinder::MAX_JETS_OUT; i++) {
+    if (!jlc->getOutputJetsA().at(i).isNullJet()) { sumHt += jetHtSum(jlc->getJetFinderA(), i); }
+    if (!jlc->getOutputJetsB().at(i).isNullJet()) { sumHt += jetHtSum(jlc->getJetFinderB(), i); }
+    if (!jlc->getOutputJetsC().at(i).isNullJet()) { sumHt += jetHtSum(jlc->getJetFinderC(), i); }
+  }
+
+  leafHt = result;
+  return (sumHt==result);
+}
+
+/// Work out the Ht for a jet.
+unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
+
+  // We need to take the eta and phi, and go back to the
+  // raw data, since the raw energy sum is not stored
+  vector<L1GctRegion>inputRegions = jf->getInputRegions();
+  const unsigned COL_OFFSET = ((L1GctMap::N_RGN_ETA)/2)+1;
+
+  // Check the input array size
+  if (inputRegions.size()!=(COL_OFFSET*4)) {
+    cout << "Invalid size for jet finder input " << inputRegions.size() << " expecting " << (COL_OFFSET*4) << endl;
+    return 0;
+  }
+
+  // Find the eta and phi for this jet, and check
+  unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).eta());
+  unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).phi());
+
+  if (phi>1 || eta>=(COL_OFFSET-1)) {
+    cout << "Invalid eta, phi for jet: " << eta << ", " << phi << endl;
+    return 0;
+  }
+
+  // Sum the et values for the nine regions centred on this eta and phi
+  unsigned rawSum = 0;
+
+  for (unsigned col=phi; col<=phi+2; col++) {
+    rawSum += inputRegions.at(col*COL_OFFSET+eta).et();
+    rawSum += inputRegions.at(col*COL_OFFSET+eta+1).et();
+    if ((eta+2)<COL_OFFSET) {
+      rawSum += inputRegions.at(col*COL_OFFSET+eta+2).et();
+    }
+  }
+  // Convert to Ht and return
+  return static_cast<unsigned>(jf->getJetEtCalLut()->convertToTenBitRank(static_cast<uint16_t>(rawSum),
+									 static_cast<uint16_t>(eta)));
 }
 
 
