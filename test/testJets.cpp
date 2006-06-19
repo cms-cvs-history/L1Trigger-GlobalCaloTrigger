@@ -47,23 +47,27 @@ int main()
 
     cout << "===== CENTRAL JETS ====" << endl;
     for (unsigned i=0; i<centralJets.size();i++){
-      cout << centralJets[i];
+      cout << centralJets.at(i);
     }
 
     cout << "===== FORWARD JETS ====" << endl;
     for (unsigned i=0; i<forwardJets.size();i++){
-      cout << forwardJets[i];
+      cout << forwardJets.at(i);
     }
 
     cout << "===== TAU JETS ====" << endl;
     for (unsigned i=0; i<tauJets.size();i++){
-      cout << tauJets[i];
+      cout << tauJets.at(i);
     }
     
   }
   catch (cms::Exception& e)
     {
-      cerr << e.what() << endl;
+      cerr << "CMS exception from " << e.what() << endl;
+    }
+  catch (std::exception& e)
+    {
+      cerr << "std exception from " << e.what() << endl;
     }
   catch (...) { // Catch anything unknown that goes wrong! 
     cerr << "yikes! something awful happened.... (unknown exception)" << endl; 
