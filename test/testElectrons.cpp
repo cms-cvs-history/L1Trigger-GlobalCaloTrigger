@@ -45,7 +45,7 @@ int main()
 
   //Open source card files and look at the electrons in there
   cout<<"testelectrons open file?"<<endl;
-    std::string fileName = "testElectronsRct_";
+    std::string fileName = "data/testElectronsRct_";
     gct->openSourceCardFiles(fileName);
     cout<<"about to process..."<<endl;
     gct->process();
@@ -61,7 +61,7 @@ int main()
     cout<<"END OF TEST PROGRAM"<<endl;
   }
   catch(std::exception e){
-    e.what();
+    cerr << e.what() << endl;
   }
 }
 
