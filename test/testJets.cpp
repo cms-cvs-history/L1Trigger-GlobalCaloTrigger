@@ -35,13 +35,13 @@ int main()
     gct->process(); // process
 
     // central jet outputs to GT
-    vector<L1GctJetCand> centralJets = gct->getCentralJets();
+    vector<L1GctJet> centralJets = gct->getCentralJets();
   
     // forward jet outputs to GT
-    vector<L1GctJetCand> forwardJets = gct->getForwardJets();
+    vector<L1GctJet> forwardJets = gct->getForwardJets();
   
     // tau jet outputs to GT
-    vector<L1GctJetCand> tauJets = gct->getTauJets();
+    vector<L1GctJet> tauJets = gct->getTauJets();
 
     // Now take a look at the output jets
 

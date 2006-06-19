@@ -26,7 +26,7 @@
 //Custom headers needed for this test
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctMap.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctRegion.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetCand.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctEtTypes.h"
 
 //Standard library headers
