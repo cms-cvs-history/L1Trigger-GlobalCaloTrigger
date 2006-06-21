@@ -49,7 +49,7 @@ typedef vector<L1GctJet> JetsVector;
 string classTest();
 //
 /// Generate an event, load it into the gct, and return some sums for checking
-void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
+void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
 	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow);
 /// Check the energy sums algorithms
 bool checkEnergySums(const L1GlobalCaloTrigger* gct,
@@ -91,11 +91,8 @@ string classTest()
 {
   bool testPass = true;       //Test passing flag.
     
-//   const int maxTests=10000;
-//   const int initialTests=100;
- 
-  const int maxTests=20;
-  const int initialTests=10;
+  const int maxTests=10000;
+  const int initialTests=100;
  
   // Initialise the gct
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false);
@@ -109,7 +106,7 @@ string classTest()
       // Generate an event
       vector <unsigned>etStripSums(36);
       bool inMinusOvrFlow, inPlusOverFlow;
-      nextEvent(gct, (t<initialTests), etStripSums, inMinusOvrFlow, inPlusOverFlow);
+      loadNextEvent(gct, (t<initialTests), etStripSums, inMinusOvrFlow, inPlusOverFlow);
 
       //
       // Run the processing
@@ -123,7 +120,7 @@ string classTest()
       //--------------------------------------------------------------------------------------
       //
 
-      testPass |= checkEnergySums(gct, etStripSums,inMinusOvrFlow, inPlusOverFlow);
+      testPass &= checkEnergySums(gct, etStripSums,inMinusOvrFlow, inPlusOverFlow);
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
@@ -142,7 +139,7 @@ string classTest()
       JetsVector MinusWheelJets;
       JetsVector PlusWheelJets;
 
-      testPass |= checkHtSums(gct, MinusWheelJets, PlusWheelJets); 
+      testPass &= checkHtSums(gct, MinusWheelJets, PlusWheelJets); 
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
@@ -156,7 +153,7 @@ string classTest()
       //--------------------------------------------------------------------------------------
       //
     
-      testPass |= checkJetCounts(gct, MinusWheelJets, PlusWheelJets); 
+      testPass &= checkJetCounts(gct, MinusWheelJets, PlusWheelJets); 
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
@@ -176,23 +173,20 @@ string classTest()
 //=========================================================================
 //
 // FUNCTION PROTOTYPES FOR EVENT GENERATION
-/// Generates test data for missing Et both as (x,y) components and
-/// 2-vector (magnitude, direction)
-void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
+/// Generates test data for missing Et as 2-vector (magnitude, direction)
+etmiss_vec randomMissingEtVector();
 /// Generates test data consisting of energies to be added together with their sum
-void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
-/// Integer calculation of Ex or Ey from magnitude for a given phi bin
-int etComponent(const unsigned Emag, const unsigned fact);
+void generateTestData(vector<unsigned> &energies, int size, unsigned max);
 //=========================================================================
 /// Generate an event, load it into the gct, and return some sums for checking
-void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
+void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
 	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow)
 {
   // For (eta,phi) mapping of input regions
   L1GctMap* map = L1GctMap::getMap();
 
   for (int i=0; i<36; i++) {
-    etStripSums[i]=0;
+    etStripSums.at(i)=0;
   }
   inMinusOvrFlow = false;
   inPlusOverFlow = false;
@@ -201,11 +195,8 @@ void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   // Then test with summing multiple regions. Choose one value
   // of energy and phi for each eta to avoid trying to set the
   // same region several times.
-  for (int i=0; i<(simpleEvent ? 1 : 22); i++) {
-    etmiss_vec etVector;
-    int exValue, eyValue;
-    generateMissingEtTestData(exValue, eyValue, etVector);
-    //
+  for (unsigned i=0; i<(simpleEvent ? 1 : L1GctMap::N_RGN_ETA); i++) {
+    etmiss_vec etVector=randomMissingEtVector();
     // Set a single region input
     unsigned etaRegion = i;
     unsigned phiRegion = etVector.phi/4;
@@ -214,11 +205,11 @@ void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
     gct->setRegion(temp);
 
     // Here we fill the expected values
-    if (etaRegion<11) {
-      etStripSums[phiRegion] += etVector.mag;
+    if (etaRegion<(L1GctMap::N_RGN_ETA)/2) {
+      etStripSums.at(phiRegion) += etVector.mag;
       inMinusOvrFlow |= (etVector.mag>=0x400);
     } else {
-      etStripSums[phiRegion+18] += etVector.mag;
+      etStripSums.at(phiRegion+L1GctMap::N_RGN_PHI) += etVector.mag;
       inPlusOverFlow |= (etVector.mag>=0x400);
     }
   }
@@ -228,7 +219,7 @@ void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
 // Function definitions for event generation
 //=========================================================================
 // Generates 2-d missing Et vector
-void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
+etmiss_vec randomMissingEtVector()
 {
   // This produces random variables distributed as a 2-d Gaussian
   // with a standard deviation of sigma for each component,
@@ -246,18 +237,17 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   const unsigned rmax=262144;
 
   vector<unsigned> components(2);
-  unsigned dummySum;
   float p,r,s;
   unsigned Emag, Ephi;
 
   const float nbins = 18.;
 
   // Generate a pair of uniform pseudo-random integers
-  generateTestData(components, (int) 2, rmax, dummySum);
+  generateTestData(components, (int) 2, rmax);
 
   // Exclude the value zero for the first random integer
   // (Alternatively, return an overflow bit)
-  while (components[0]==0) {generateTestData(components, (int) 2, rmax, dummySum);}
+  while (components[0]==0) {generateTestData(components, (int) 2, rmax);}
 
   // Convert to the 2-d Gaussian
   r = float(rmax);
@@ -266,23 +256,22 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   // Force phi value into the centre of a bin
   Emag = int(sigma*sqrt(2.*log(s)));
   Ephi = int(nbins*p);
-  //
+  // Copy to the output
+  etmiss_vec Et;
   Et.mag = Emag;
   Et.phi = (4*Ephi)+2;
+  return Et;
 
-  Ex = etComponent(Emag, ((2*Ephi)+1));
-  Ey = etComponent(Emag, ((2*Ephi)+10)%36);
 }
 
-/// Generates test data consisting of energies to be added together with their sum
-void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum)
+/// Generates test data consisting of a vector of energies
+/// uniformly distributed between zero and max
+void generateTestData(vector<unsigned> &energies, int size, unsigned max)
 {
   int i;
   int r,e;
   float p,q,s,t;
-  int tempsum;
 
-  tempsum = 0;
   p = float(max);
   q = float(RAND_MAX);
   for (i=0; i<size; i++) {
@@ -292,45 +281,7 @@ void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsign
     e = int(t);
 
     energies[i] = e;
-    tempsum = tempsum+e;
   }
-  sum = tempsum;
-}
-
-int etComponent(const unsigned Emag, const unsigned fact) {
-  // Copy the Ex, Ey conversion from the hardware emulation
-  const unsigned sinFact[10] = {0, 44, 87, 128, 164, 196, 221, 240, 252, 256};
-  unsigned myFact;
-  bool negativeResult;
-  int result;
-  switch (fact/9) {
-  case 0:
-    myFact = sinFact[fact];
-    negativeResult = false;
-    break;
-  case 1:
-    myFact = sinFact[(18-fact)];
-    negativeResult = false;
-    break;
-  case 2:
-    myFact = sinFact[(fact-18)];
-    negativeResult = true;
-    break;
-  case 3:
-    myFact = sinFact[(36-fact)];
-    negativeResult = true;
-    break;
-  default:
-    cout << "Invalid factor " << fact << endl;
-    return 0;
-  }
-  result = static_cast<int>(Emag*myFact);
-  if ( negativeResult ) {
-    result = (1<<24)-result;
-    result = result>>8;
-    result = result-(1<<16);
-  } else { result = result>>8; }
-  return result;
 }
 
 
@@ -340,6 +291,8 @@ int etComponent(const unsigned Emag, const unsigned fact) {
 //=========================================================================
 //
 // FUNCTION PROTOTYPES FOR ENERGY SUM CHECKING
+/// Integer calculation of Ex or Ey from magnitude for a given phi bin
+int etComponent(const unsigned Emag, const unsigned fact);
 /// Calculate et vector from ex and ey, using floating arithmetic and conversion back to integer
 etmiss_vec trueMissingEt(const int ex, const int ey);
 //=========================================================================
@@ -360,8 +313,8 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   for (int leaf=0; leaf<3; leaf++) {
     for (int i=0; i<6; i++) {
       unsigned et = etStripSums.at(strip);
-      int ex = etComponent(et, ((2*strip+10)%36) );
-      int ey = etComponent(et, ((2*strip+1 )%36) );
+      int ex = etComponent(et, ((2*strip+1 )%36) );
+      int ey = etComponent(et, ((2*strip+10)%36) );
       strip++;
 
       exMinusVl += ex;
@@ -448,8 +401,46 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
 }
 
 //
-// Function definition for energy sum checking
+// Function definitions for energy sum checking
 //=========================================================================
+int etComponent(const unsigned Emag, const unsigned fact) {
+  // Copy the Ex, Ey conversion from the hardware emulation
+  const unsigned sinFact[10] = {0, 44, 87, 128, 164, 196, 221, 240, 252, 256};
+  unsigned myFact;
+  bool negativeResult;
+  int result;
+  switch (fact/9) {
+  case 0:
+    myFact = sinFact[fact];
+    negativeResult = false;
+    break;
+  case 1:
+    myFact = sinFact[(18-fact)];
+    negativeResult = false;
+    break;
+  case 2:
+    myFact = sinFact[(fact-18)];
+    negativeResult = true;
+    break;
+  case 3:
+    myFact = sinFact[(36-fact)];
+    negativeResult = true;
+    break;
+  default:
+    cout << "Invalid factor " << fact << endl;
+    return 0;
+  }
+  result = static_cast<int>(Emag*myFact);
+  // Divide by 256 using bit-shift; but emulate
+  // twos-complement arithmetic for negative numbers
+  if ( negativeResult ) {
+    result = (1<<24)-result;
+    result = result>>8;
+    result = result-(1<<16);
+  } else { result = result>>8; }
+  return result;
+}
+
 /// Calculate the expected missing Et vector for a given
 /// ex and ey sum, for comparison with the hardware
 etmiss_vec trueMissingEt(const int ex, const int ey) {
