@@ -132,23 +132,27 @@ string classTest()
 	  return "Test class has failed check of energy summing logic!";
 	}
 
-      JetsVector MinusWheelJets;
-      JetsVector PlusWheelJets;
-
       //
+      // Check the Ht summing
       //--------------------------------------------------------------------------------------
       //
     
+      // This check fills lists of the jets found in the event,
+      // which are then used by the jet count checking
+      JetsVector MinusWheelJets;
+      JetsVector PlusWheelJets;
+
       testPass |= checkHtSums(gct, MinusWheelJets, PlusWheelJets); 
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
-	  cout << gct->getEnergyFinalStage() << endl;
+	  cout << *gct->getEnergyFinalStage() << endl;
 	  cout << "Failed at test number " << t <<endl;
 	  return "Test class has failed check of Ht summing logic!";
 	}
    
       //
+      // Check the jet counts
       //--------------------------------------------------------------------------------------
       //
     
@@ -266,8 +270,8 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   Et.mag = Emag;
   Et.phi = (4*Ephi)+2;
 
-  Ex = etComponent(Emag, ((2*Ephi)+10)%36);
-  Ey = etComponent(Emag, ((2*Ephi)+1));
+  Ex = etComponent(Emag, ((2*Ephi)+1));
+  Ey = etComponent(Emag, ((2*Ephi)+10)%36);
 }
 
 /// Generates test data consisting of energies to be added together with their sum
@@ -376,8 +380,8 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   for (int leaf=3; leaf<6; leaf++) {
     for (int i=0; i<6; i++) {
       unsigned et = etStripSums.at(strip);
-      int ex = etComponent(et, ((2*strip+10)%36) );
-      int ey = etComponent(et, ((2*strip+1 )%36) );
+      int ex = etComponent(et, ((2*strip+1 )%36) );
+      int ey = etComponent(et, ((2*strip+10)%36) );
       strip++;
 
       exPlusVal += ex;
