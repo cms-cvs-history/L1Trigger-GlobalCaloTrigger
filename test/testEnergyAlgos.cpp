@@ -17,6 +17,7 @@
 
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctGlobalEnergyAlgos.h"  //The class to be tested
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelJetFpga.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelEnergyFpga.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetFinder.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetLeafCard.h"
@@ -41,30 +42,26 @@ using namespace std;
 //Typedefs for the vector templates used
         struct etmiss_vec { unsigned mag; unsigned phi;};
 // typedef vector<L1GctRegion> RegionsVector;
-// typedef vector<L1GctJet> JetsVector;
+typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
 /// Runs the test, and returns a string with the test result message in.
 string classTest();
 //
-/// Generates test data for missing Et both as (x,y) components and
-/// 2-vector (magnitude, direction)
-void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
-/// Integer calculation of Ex or Ey from magnitude for a given phi bin
-int etComponent(const unsigned Emag, const unsigned fact);
-/// Calculate et vector from ex and ey, using floating arithmetic and conversion back to integer
-etmiss_vec trueMissingEt(const int ex, const int ey);
-/// Generates test data consisting of energies to be added together with their sum
-void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
-/// Checks the Ht calculation in a leaf card and returns the Ht sum
-bool checkHt(L1GctJetLeafCard* jlc, unsigned &leafHt);
-/// Works out the Ht for a jet from the raw input regions
-unsigned jetHtSum(L1GctJetFinder* jf, int jn);
+/// Generate an event, load it into the gct, and return some sums for checking
+void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
+	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow);
+/// Check the energy sums algorithms
+bool checkEnergySums(const L1GlobalCaloTrigger* gct,
+		     const vector<unsigned> &etStripSums,
+		     const bool inMinusOvrFlow, const bool inPlusOverFlow);
 
-// /// Loads test input regions and also the known results from a text file.
-// void loadTestData(RegionsVector &regions, JetsVector &jets, const string &fileName);
-// /// Function to safely open files of any name, using a referenced return ifstream
-// void safeOpenFile(ifstream &fin, const string &name);
+/// Check the Ht summing algorithms
+bool checkHtSums(const L1GlobalCaloTrigger* gct,
+		 JetsVector &MinusWheelJets, JetsVector &PlusWheelJets);
+/// Check the jet counting algorithms
+bool checkJetCounts(const L1GlobalCaloTrigger* gct,
+		    const JetsVector MinusWheelJets, const JetsVector PlusWheelJets);
 
 /// Entrypoint of unit test code + error handling
 int main(int argc, char **argv)
@@ -92,43 +89,16 @@ int main(int argc, char **argv)
 // Runs the test, and returns a string with the test result message in.
 string classTest()
 {
-  L1GctGlobalEnergyAlgos* myGlobalEnergy;
-
   bool testPass = true;       //Test passing flag.
     
-  const int maxValues=3;
-  vector<unsigned> energyValues(maxValues);
-  vector<unsigned> JcResult(12);
-
-  vector <unsigned>etStripSums(36);
-
-  int exPlusVal, exMinusVl;
-  int eyPlusVal, eyMinusVl;
-  unsigned etPlusVal, etMinusVl;
-  unsigned htPlusVal, htMinusVl;
-  int exValue, eyValue;
-  int exTotal, eyTotal;
-  unsigned etTotal, htTotal;
-  etmiss_vec etVector, etResult;
-
-  bool inPlusOverFlow, inMinusOvrFlow;
-  bool exPlusOverFlow, eyPlusOverFlow, etPlusOverFlow, htPlusOverFlow;
-  bool exMinusOvrFlow, eyMinusOvrFlow, etMinusOvrFlow, htMinusOvrFlow;
-  bool exTotalOvrFlow, eyTotalOvrFlow, etTotalOvrFlow, htTotalOvrFlow;
-  bool etMissOverFlow;
-
-  unsigned etDiff, phDiff;
-  unsigned etMargin, phMargin;
-
-  const int maxTests=10000;
-  const int initialTests=100;
+//   const int maxTests=10000;
+//   const int initialTests=100;
  
-  // For (eta,phi) mapping of input regions
-  L1GctMap* map = L1GctMap::getMap();
-
+  const int maxTests=20;
+  const int initialTests=10;
+ 
   // Initialise the gct
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false);
-  myGlobalEnergy = gct->getEnergyFinalStage();
 
   for (int t=0; t<maxTests; t++)
     {
@@ -136,94 +106,10 @@ string classTest()
       // Initialise the gct
       gct->reset();
 
-      for (int i=0; i<36; i++) { etStripSums[i]=0; }
-
-      exPlusVal = 0;
-      eyPlusVal = 0;
-      etPlusVal = 0;
-      htPlusVal = 0;
-      exMinusVl = 0;
-      eyMinusVl = 0;
-      etMinusVl = 0;
-      htMinusVl = 0;
-
-      inPlusOverFlow = false;
-      inMinusOvrFlow = false;
-      htPlusOverFlow = false;
-      htMinusOvrFlow = false;
-
-      etResult.mag = 0;
-      etResult.phi = 0;
-      // For initial tests just try things out with one region input
-      // Then test with summing multiple regions. Choose one value
-      // of energy and phi for each eta to avoid trying to set the
-      // same region several times.
-      for (int i=0; i<(t<initialTests ? 1 : 22); i++) {
-        generateMissingEtTestData(exValue, eyValue, etVector);
-        //
-        // Set a single region input
-	unsigned etaRegion = i;
-        unsigned phiRegion = etVector.phi/4;
-        
-        L1GctRegion temp(map->id(etaRegion,phiRegion), etVector.mag, false, false, false, false);
-	gct->setRegion(temp);
-
-        // Here we fill the expected values
-	if (etaRegion<11) {
-	  etStripSums[phiRegion] += etVector.mag;
-	  inMinusOvrFlow |= (etVector.mag>=0x400);
-	} else {
-	  etStripSums[phiRegion+18] += etVector.mag;
-	  inPlusOverFlow |= (etVector.mag>=0x400);
-	}
-
-      }
-
-      // Find the expected sums
-      int strip = 0;
-      for (int leaf=0; leaf<3; leaf++) {
-	for (int i=0; i<6; i++) {
-	  unsigned et = etStripSums.at(strip);
-	  int ex = etComponent(et, ((2*strip+10)%36) );
-	  int ey = etComponent(et, ((2*strip+1 )%36) );
-	  strip++;
-
-	  exMinusVl += ex;
-	  eyMinusVl += ey;
-	  etMinusVl += et; 
-	}
-      }
-      exMinusOvrFlow = (exMinusVl<-2048) || (exMinusVl>=2048) || inMinusOvrFlow;
-      eyMinusOvrFlow = (eyMinusVl<-2048) || (eyMinusVl>=2048) || inMinusOvrFlow;
-      etMinusOvrFlow = (etMinusVl>=4096) || inMinusOvrFlow;
-
-      for (int leaf=3; leaf<6; leaf++) {
-	for (int i=0; i<6; i++) {
-	  unsigned et = etStripSums.at(strip);
-	  int ex = etComponent(et, ((2*strip+10)%36) );
-	  int ey = etComponent(et, ((2*strip+1 )%36) );
-	  strip++;
-
-	  exPlusVal += ex;
-	  eyPlusVal += ey;
-	  etPlusVal += et; 
-	}
-      }
-      exPlusOverFlow = (exPlusVal<-2048) || (exPlusVal>=2048) || inPlusOverFlow;
-      eyPlusOverFlow = (eyPlusVal<-2048) || (eyPlusVal>=2048) || inPlusOverFlow;
-      etPlusOverFlow = (etPlusVal>=4096) || inPlusOverFlow;
-
-      exTotal = exMinusVl + exPlusVal;
-      eyTotal = eyMinusVl + eyPlusVal;
-      etTotal = etMinusVl + etPlusVal;
-
-      etResult = trueMissingEt(exTotal, eyTotal);
-
-      exTotalOvrFlow = (exTotal<-2048) || (exTotal>=2048) || exMinusOvrFlow || exPlusOverFlow;
-      eyTotalOvrFlow = (eyTotal<-2048) || (eyTotal>=2048) || eyMinusOvrFlow || eyPlusOverFlow;
-      etTotalOvrFlow = (etTotal>=4096) || etMinusOvrFlow  || etPlusOverFlow;
-
-      etMissOverFlow = exTotalOvrFlow || eyTotalOvrFlow;
+      // Generate an event
+      vector <unsigned>etStripSums(36);
+      bool inMinusOvrFlow, inPlusOverFlow;
+      nextEvent(gct, (t<initialTests), etStripSums, inMinusOvrFlow, inPlusOverFlow);
 
       //
       // Run the processing
@@ -233,98 +119,110 @@ string classTest()
       gct->process();  //Run algorithm
 
       //
-      // Check the Ht calculation (starting from the found jets)
+      // Check the energy sum logic
       //--------------------------------------------------------------------------------------
       //
-      // Minus Wheel
-      for (int leaf=0; leaf<3; leaf++) {
-	unsigned ht;
-	if (checkHt(gct->getJetLeafCards().at(leaf), ht)) {
-	  htMinusVl += ht;
-	} else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
-      }
-      // Plus Wheel
-      for (int leaf=3; leaf<6; leaf++) {
-	unsigned ht = 0;
-	if (checkHt(gct->getJetLeafCards().at(leaf), ht)) {
-	  htPlusVal += ht;
-	} else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
-      }
-      htMinusOvrFlow = (htMinusVl>=4096);
-      htPlusOverFlow = (htPlusVal>=4096);
-      htTotal = htMinusVl + htPlusVal;
-      htTotalOvrFlow = (htTotal>=4096) || htMinusOvrFlow  || htPlusOverFlow;
-      //
-      // Check the input to the final GlobalEnergyAlgos is as expected
-      //--------------------------------------------------------------------------------------
-      //
-      if (!myGlobalEnergy->getInputExVlMinusWheel().overFlow() && !exMinusOvrFlow &&
-	  (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl)) { cout << "ex Minus " << exMinusVl <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputExValPlusWheel().overFlow() && !exPlusOverFlow &&
-	  (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal)) { cout << "ex Plus " << exPlusVal <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputEyVlMinusWheel().overFlow() && !eyMinusOvrFlow &&
-	  (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl)) { cout << "ey Minus " << eyMinusVl <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputEyValPlusWheel().overFlow() && !eyPlusOverFlow &&
-	  (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal)) { cout << "ey Plus " << eyPlusVal <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputEtVlMinusWheel().overFlow() && !etMinusOvrFlow &&
-	  (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl)) { cout << "et Minus " << etMinusVl <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputEtValPlusWheel().overFlow() && !etPlusOverFlow &&
-	  (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal)) { cout << "et Plus " << etPlusVal <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputHtVlMinusWheel().overFlow() && !htMinusOvrFlow &&
-	  (myGlobalEnergy->getInputHtVlMinusWheel().value()!=htMinusVl)) { cout << "ht Minus " << htMinusVl <<endl; testPass = false; }
-      if (!myGlobalEnergy->getInputHtValPlusWheel().overFlow() && !htPlusOverFlow &&
-	  (myGlobalEnergy->getInputHtValPlusWheel().value()!=htPlusVal)) { cout << "ht Plus " << htPlusVal <<endl; testPass = false; }
-   
-      if(testPass == false)
-	{
-	  cout << *myGlobalEnergy << endl;
-	  cout << "Failed at test number " << t <<endl;
-	  return "Test class has failed initial data input/output comparison!";
-	}
-      //
-      //--------------------------------------------------------------------------------------
-      //
-      // Check the missing Et calculation. Allow some margin for the
-      // integer calculation of missing Et.
-      if (!etMissOverFlow && !myGlobalEnergy->getEtMiss().overFlow()) {
-        etDiff = (unsigned) abs((long int) etResult.mag - (long int) myGlobalEnergy->getEtMiss().value());
-        phDiff = (unsigned) abs((long int) etResult.phi - (long int) myGlobalEnergy->getEtMissPhi().value());
-        if (phDiff>60) {phDiff=72-phDiff;}
-        //
-        etMargin = max((etResult.mag/100), (unsigned) 1) + 2;
-        if (etResult.mag==0) { phMargin = 72; } else { phMargin = (30/etResult.mag) + 1; }
-        if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss diff "
-                                                    << etDiff << " phi diff " << phDiff << endl; testPass = false;}
-      }
-      // Check the other output values
-      if (!myGlobalEnergy->getEtSum().overFlow() && !etTotalOvrFlow &&
-          (myGlobalEnergy->getEtSum().value() != etTotal)) {cout << "Algo etSum" << endl; testPass = false;}
-      if (!myGlobalEnergy->getEtHad().overFlow() && !htTotalOvrFlow &&
-          (myGlobalEnergy->getEtHad().value() != htTotal)) {cout << "Algo etHad" << endl; testPass = false;}
-//       for (int j=0 ; j<12 ; j++) {
-//         if (myGlobalEnergy->getJetCount(j).value() != JcResult[j]) {cout << "Algo jCount" << endl; 
-//       cout << "Expected " << JcResult[j] << " found " << myGlobalEnergy->getJetCount(j) << endl; 
-//       cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl; 
-//       cout << "PlusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl; testPass = false;}
-//       }
-    
-      //
-      //--------------------------------------------------------------------------------------
-      //
-    
+
+      testPass |= checkEnergySums(gct, etStripSums,inMinusOvrFlow, inPlusOverFlow);
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
-	  cout << *myGlobalEnergy << endl;
+	  cout << *gct->getEnergyFinalStage() << endl;
 	  cout << "Failed at test number " << t <<endl;
-	  return "Test class has failed algorithm processing!";
+	  return "Test class has failed check of energy summing logic!";
+	}
+
+      JetsVector MinusWheelJets;
+      JetsVector PlusWheelJets;
+
+      //
+      //--------------------------------------------------------------------------------------
+      //
+    
+      testPass |= checkHtSums(gct, MinusWheelJets, PlusWheelJets); 
+      if(testPass == false)
+	{
+	  // Print failed events for debug purposes
+	  cout << gct->getEnergyFinalStage() << endl;
+	  cout << "Failed at test number " << t <<endl;
+	  return "Test class has failed check of Ht summing logic!";
+	}
+   
+      //
+      //--------------------------------------------------------------------------------------
+      //
+    
+      testPass |= checkJetCounts(gct, MinusWheelJets, PlusWheelJets); 
+      if(testPass == false)
+	{
+	  // Print failed events for debug purposes
+	  cout << *gct->getEnergyFinalStage() << endl;
+	  cout << "Failed at test number " << t <<endl;
+	  return "Test class has failed check of jet count logic!";
 	}
     }
   // Test the print routine at the end
-  cout << *myGlobalEnergy << endl;
+  cout << *gct->getEnergyFinalStage() << endl;
   return "Test class has passed!";
 }
 
+//
+//=========================================================================
+// Here's the event generation
+//=========================================================================
+//
+// FUNCTION PROTOTYPES FOR EVENT GENERATION
+/// Generates test data for missing Et both as (x,y) components and
+/// 2-vector (magnitude, direction)
+void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et);
+/// Generates test data consisting of energies to be added together with their sum
+void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum);
+/// Integer calculation of Ex or Ey from magnitude for a given phi bin
+int etComponent(const unsigned Emag, const unsigned fact);
+//=========================================================================
+/// Generate an event, load it into the gct, and return some sums for checking
+void nextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
+	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow)
+{
+  // For (eta,phi) mapping of input regions
+  L1GctMap* map = L1GctMap::getMap();
+
+  for (int i=0; i<36; i++) {
+    etStripSums[i]=0;
+  }
+  inMinusOvrFlow = false;
+  inPlusOverFlow = false;
+
+  // For initial tests just try things out with one region input
+  // Then test with summing multiple regions. Choose one value
+  // of energy and phi for each eta to avoid trying to set the
+  // same region several times.
+  for (int i=0; i<(simpleEvent ? 1 : 22); i++) {
+    etmiss_vec etVector;
+    int exValue, eyValue;
+    generateMissingEtTestData(exValue, eyValue, etVector);
+    //
+    // Set a single region input
+    unsigned etaRegion = i;
+    unsigned phiRegion = etVector.phi/4;
+        
+    L1GctRegion temp(map->id(etaRegion,phiRegion), etVector.mag, false, false, false, false);
+    gct->setRegion(temp);
+
+    // Here we fill the expected values
+    if (etaRegion<11) {
+      etStripSums[phiRegion] += etVector.mag;
+      inMinusOvrFlow |= (etVector.mag>=0x400);
+    } else {
+      etStripSums[phiRegion+18] += etVector.mag;
+      inPlusOverFlow |= (etVector.mag>=0x400);
+    }
+  }
+}
+
+//
+// Function definitions for event generation
+//=========================================================================
 // Generates 2-d missing Et vector
 void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
 {
@@ -372,6 +270,29 @@ void generateMissingEtTestData(int &Ex, int &Ey, etmiss_vec &Et)
   Ey = etComponent(Emag, ((2*Ephi)+1));
 }
 
+/// Generates test data consisting of energies to be added together with their sum
+void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum)
+{
+  int i;
+  int r,e;
+  float p,q,s,t;
+  int tempsum;
+
+  tempsum = 0;
+  p = float(max);
+  q = float(RAND_MAX);
+  for (i=0; i<size; i++) {
+    r = rand();
+    s = float(r);
+    t = s*p/q;
+    e = int(t);
+
+    energies[i] = e;
+    tempsum = tempsum+e;
+  }
+  sum = tempsum;
+}
+
 int etComponent(const unsigned Emag, const unsigned fact) {
   // Copy the Ex, Ey conversion from the hardware emulation
   const unsigned sinFact[10] = {0, 44, 87, 128, 164, 196, 221, 240, 252, 256};
@@ -408,6 +329,123 @@ int etComponent(const unsigned Emag, const unsigned fact) {
   return result;
 }
 
+
+//
+//=========================================================================
+// Here's the procedure for checking the energy sums (Ex, Ey, total and missing Et)
+//=========================================================================
+//
+// FUNCTION PROTOTYPES FOR ENERGY SUM CHECKING
+/// Calculate et vector from ex and ey, using floating arithmetic and conversion back to integer
+etmiss_vec trueMissingEt(const int ex, const int ey);
+//=========================================================================
+/// Check the energy sums algorithms
+bool checkEnergySums(const L1GlobalCaloTrigger* gct,
+		     const vector<unsigned> &etStripSums,
+		     const bool inMinusOvrFlow, const bool inPlusOverFlow)
+{
+  bool testPass=true;
+  L1GctGlobalEnergyAlgos* myGlobalEnergy = gct->getEnergyFinalStage();
+
+  int exMinusVl = 0;
+  int eyMinusVl = 0;
+  unsigned etMinusVl = 0;
+
+  // Find the expected sums
+  int strip = 0;
+  for (int leaf=0; leaf<3; leaf++) {
+    for (int i=0; i<6; i++) {
+      unsigned et = etStripSums.at(strip);
+      int ex = etComponent(et, ((2*strip+10)%36) );
+      int ey = etComponent(et, ((2*strip+1 )%36) );
+      strip++;
+
+      exMinusVl += ex;
+      eyMinusVl += ey;
+      etMinusVl += et; 
+    }
+  }
+  bool exMinusOvrFlow = (exMinusVl<-2048) || (exMinusVl>=2048) || inMinusOvrFlow;
+  bool eyMinusOvrFlow = (eyMinusVl<-2048) || (eyMinusVl>=2048) || inMinusOvrFlow;
+  bool etMinusOvrFlow = (etMinusVl>=4096) || inMinusOvrFlow;
+
+  int exPlusVal = 0;
+  int eyPlusVal = 0;
+  unsigned etPlusVal = 0;
+
+  for (int leaf=3; leaf<6; leaf++) {
+    for (int i=0; i<6; i++) {
+      unsigned et = etStripSums.at(strip);
+      int ex = etComponent(et, ((2*strip+10)%36) );
+      int ey = etComponent(et, ((2*strip+1 )%36) );
+      strip++;
+
+      exPlusVal += ex;
+      eyPlusVal += ey;
+      etPlusVal += et; 
+    }
+  }
+  bool exPlusOverFlow = (exPlusVal<-2048) || (exPlusVal>=2048) || inPlusOverFlow;
+  bool eyPlusOverFlow = (eyPlusVal<-2048) || (eyPlusVal>=2048) || inPlusOverFlow;
+  bool etPlusOverFlow = (etPlusVal>=4096) || inPlusOverFlow;
+
+  int exTotal = exMinusVl + exPlusVal;
+  int eyTotal = eyMinusVl + eyPlusVal;
+  unsigned etTotal = etMinusVl + etPlusVal;
+
+  etmiss_vec etResult = trueMissingEt(exTotal, eyTotal);
+
+  bool exTotalOvrFlow = (exTotal<-2048) || (exTotal>=2048) || exMinusOvrFlow || exPlusOverFlow;
+  bool eyTotalOvrFlow = (eyTotal<-2048) || (eyTotal>=2048) || eyMinusOvrFlow || eyPlusOverFlow;
+  bool etTotalOvrFlow = (etTotal>=4096) || etMinusOvrFlow  || etPlusOverFlow;
+
+  bool etMissOverFlow = exTotalOvrFlow || eyTotalOvrFlow;
+
+  //
+  // Check the input to the final GlobalEnergyAlgos is as expected
+  //--------------------------------------------------------------------------------------
+  //
+  if (!myGlobalEnergy->getInputExVlMinusWheel().overFlow() && !exMinusOvrFlow &&
+      (myGlobalEnergy->getInputExVlMinusWheel().value()!=exMinusVl)) { cout << "ex Minus " << exMinusVl <<endl; testPass = false; }
+  if (!myGlobalEnergy->getInputExValPlusWheel().overFlow() && !exPlusOverFlow &&
+      (myGlobalEnergy->getInputExValPlusWheel().value()!=exPlusVal)) { cout << "ex Plus " << exPlusVal <<endl; testPass = false; }
+  if (!myGlobalEnergy->getInputEyVlMinusWheel().overFlow() && !eyMinusOvrFlow &&
+      (myGlobalEnergy->getInputEyVlMinusWheel().value()!=eyMinusVl)) { cout << "ey Minus " << eyMinusVl <<endl; testPass = false; }
+  if (!myGlobalEnergy->getInputEyValPlusWheel().overFlow() && !eyPlusOverFlow &&
+      (myGlobalEnergy->getInputEyValPlusWheel().value()!=eyPlusVal)) { cout << "ey Plus " << eyPlusVal <<endl; testPass = false; }
+  if (!myGlobalEnergy->getInputEtVlMinusWheel().overFlow() && !etMinusOvrFlow &&
+      (myGlobalEnergy->getInputEtVlMinusWheel().value()!=etMinusVl)) { cout << "et Minus " << etMinusVl <<endl; testPass = false; }
+  if (!myGlobalEnergy->getInputEtValPlusWheel().overFlow() && !etPlusOverFlow &&
+      (myGlobalEnergy->getInputEtValPlusWheel().value()!=etPlusVal)) { cout << "et Plus " << etPlusVal <<endl; testPass = false; }
+ 
+  //
+  // Now check the processing in the final stage GlobalEnergyAlgos
+  //--------------------------------------------------------------------------------------
+  //
+  // Check the missing Et calculation. Allow some margin for the
+  // integer calculation of missing Et.
+  if (!etMissOverFlow && !myGlobalEnergy->getEtMiss().overFlow()) {
+    unsigned etDiff, phDiff;
+    unsigned etMargin, phMargin;
+
+    etDiff = (unsigned) abs((long int) etResult.mag - (long int) myGlobalEnergy->getEtMiss().value());
+    phDiff = (unsigned) abs((long int) etResult.phi - (long int) myGlobalEnergy->getEtMissPhi().value());
+    if (phDiff>60) {phDiff=72-phDiff;}
+    //
+    etMargin = max((etResult.mag/100), (unsigned) 1) + 2;
+    if (etResult.mag==0) { phMargin = 72; } else { phMargin = (30/etResult.mag) + 1; }
+    if ((etDiff > etMargin) || (phDiff > phMargin)) {cout << "Algo etMiss diff "
+							  << etDiff << " phi diff " << phDiff << endl; testPass = false;}
+  }
+  // Check the total Et calculation
+  if (!myGlobalEnergy->getEtSum().overFlow() && !etTotalOvrFlow &&
+      (myGlobalEnergy->getEtSum().value() != etTotal)) {cout << "Algo etSum" << endl; testPass = false;}
+  return testPass;
+}
+
+//
+// Function definition for energy sum checking
+//=========================================================================
 /// Calculate the expected missing Et vector for a given
 /// ex and ey sum, for comparison with the hardware
 etmiss_vec trueMissingEt(const int ex, const int ey) {
@@ -430,22 +468,94 @@ etmiss_vec trueMissingEt(const int ex, const int ey) {
 
 }
 
+//
+//=========================================================================
+// Here's the procedure for checking the jet-energy sum (Ht calculation)
+//=========================================================================
+//
+// FUNCTION PROTOTYPES FOR HT SUM CHECKING
+/// Checks the Ht calculation in a leaf card and returns the Ht sum
+bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt);
+/// Works out the Ht for a jet from the raw input regions
+unsigned jetHtSum(L1GctJetFinder* jf, int jn);
+//=========================================================================
+/// Check the Ht summing algorithms
+bool checkHtSums(const L1GlobalCaloTrigger* gct, JetsVector &MinusWheelJets, JetsVector &PlusWheelJets)
+{
+  bool testPass = true;
+  L1GctGlobalEnergyAlgos* myGlobalEnergy = gct->getEnergyFinalStage();
+  //
+  // Check the Ht calculation (starting from the found jets)
+  //--------------------------------------------------------------------------------------
+  //
+  // Minus Wheel
+  unsigned htMinusVl = 0;
+  MinusWheelJets.clear();
+  for (int leaf=0; leaf<3; leaf++) {
+    unsigned ht;
+    if (checkHt(gct->getJetLeafCards().at(leaf), MinusWheelJets, ht)) {
+      htMinusVl += ht;
+    } else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
+  }
+
+  // Plus Wheel
+  unsigned htPlusVal = 0;
+  PlusWheelJets.clear();
+  for (int leaf=3; leaf<6; leaf++) {
+    unsigned ht = 0;
+    if (checkHt(gct->getJetLeafCards().at(leaf), PlusWheelJets, ht)) {
+      htPlusVal += ht;
+    } else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
+  }
+
+  unsigned htTotal = htMinusVl + htPlusVal;
+
+  bool htMinusOvrFlow = (htMinusVl>=4096);
+  bool htPlusOverFlow = (htPlusVal>=4096);
+  bool htTotalOvrFlow = (htTotal>=4096) || htMinusOvrFlow  || htPlusOverFlow;
+  //
+  // Check the input to the final GlobalEnergyAlgos is as expected
+  //--------------------------------------------------------------------------------------
+  //
+  if (!myGlobalEnergy->getInputHtVlMinusWheel().overFlow() && !htMinusOvrFlow &&
+      (myGlobalEnergy->getInputHtVlMinusWheel().value()!=htMinusVl)) { cout << "ht Minus " << htMinusVl <<endl; testPass = false; }
+  if (!myGlobalEnergy->getInputHtValPlusWheel().overFlow() && !htPlusOverFlow &&
+      (myGlobalEnergy->getInputHtValPlusWheel().value()!=htPlusVal)) { cout << "ht Plus " << htPlusVal <<endl; testPass = false; }
+
+  // Check the output value
+  if (!myGlobalEnergy->getEtHad().overFlow() && !htTotalOvrFlow &&
+      (myGlobalEnergy->getEtHad().value() != htTotal)) {cout << "Algo etHad" << endl; testPass = false;}
+  return testPass;
+}
+
 /// Check the initial Ht calculation
-bool checkHt(L1GctJetLeafCard* jlc, unsigned &leafHt) {
+bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
 
   unsigned result=jlc->getOutputHt().value();
   unsigned sumHt=0;
 
   for (int i=0; i<L1GctJetFinder::MAX_JETS_OUT; i++) {
-    if (!jlc->getOutputJetsA().at(i).isNullJet()) { sumHt += jetHtSum(jlc->getJetFinderA(), i); }
-    if (!jlc->getOutputJetsB().at(i).isNullJet()) { sumHt += jetHtSum(jlc->getJetFinderB(), i); }
-    if (!jlc->getOutputJetsC().at(i).isNullJet()) { sumHt += jetHtSum(jlc->getJetFinderC(), i); }
+    if (!jlc->getOutputJetsA().at(i).isNullJet()) {
+      jetList.push_back(jlc->getOutputJetsA().at(i));
+      sumHt += jetHtSum(jlc->getJetFinderA(), i);
+    }
+    if (!jlc->getOutputJetsB().at(i).isNullJet()) {
+      jetList.push_back(jlc->getOutputJetsB().at(i));
+      sumHt += jetHtSum(jlc->getJetFinderB(), i);
+    }
+    if (!jlc->getOutputJetsC().at(i).isNullJet()) {
+      jetList.push_back(jlc->getOutputJetsC().at(i));
+      sumHt += jetHtSum(jlc->getJetFinderC(), i);
+    }
   }
 
   leafHt = result;
   return (sumHt==result);
 }
 
+//
+// Function definitions for Ht sum checking
+//=========================================================================
 /// Work out the Ht for a jet.
 unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
 
@@ -484,30 +594,104 @@ unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
 									 static_cast<uint16_t>(eta)));
 }
 
-
-/// Generates test data consisting of energies to be added together with their sum
-void generateTestData(vector<unsigned> &energies, int size, unsigned max, unsigned &sum)
+//
+//=========================================================================
+// Here's the procedure for checking the jet counting
+//=========================================================================
+//
+// FUNCTION PROTOTYPE FOR JET COUNTING
+/// Counts jets in cuts
+unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const unsigned Wheel);
+//=========================================================================
+/// Check the jet counting algorithms
+bool checkJetCounts(const L1GlobalCaloTrigger* gct,
+		    const JetsVector MinusWheelJets, const JetsVector PlusWheelJets)
 {
-  int i;
-  int r,e;
-  float p,q,s,t;
-  int tempsum;
+  bool testPass = true;
+  L1GctGlobalEnergyAlgos* myGlobalEnergy = gct->getEnergyFinalStage();
+  //
+  // Emulate the jet counting
+  //--------------------------------------------------------------------------------------
+  //
+  vector<unsigned> JcMinusWheel(L1GctWheelJetFpga::N_JET_COUNTERS);
+  vector<unsigned> JcPlusWheel (L1GctWheelJetFpga::N_JET_COUNTERS);
+  vector<unsigned> JcResult(L1GctWheelJetFpga::N_JET_COUNTERS);
 
-  tempsum = 0;
-  p = float(max);
-  q = float(RAND_MAX);
-  for (i=0; i<size; i++) {
-    r = rand();
-    s = float(r);
-    t = s*p/q;
-    e = int(t);
-
-    energies[i] = e;
-    tempsum = tempsum+e;
+  for (unsigned jcnum = 0 ; jcnum<L1GctWheelJetFpga::N_JET_COUNTERS ; jcnum++) {
+    unsigned count0 = countJetsInCut(MinusWheelJets, jcnum, 0) ;
+    JcMinusWheel.at(jcnum) = count0;
+    unsigned count1 = countJetsInCut(PlusWheelJets, jcnum, 1) ;
+    JcPlusWheel.at(jcnum) = count1;
+    JcResult.at(jcnum) = ( (count0<7) && (count1<7) ? (count0 + count1) : 31 ) ;
   }
-  sum = tempsum;
+
+  // Check the inputs from the two wheels
+  for (unsigned int i=0; i<L1GctWheelJetFpga::N_JET_COUNTERS; i++) {
+    if ((myGlobalEnergy->getInputJcVlMinusWheel(i).value()!=JcMinusWheel.at(i)) &&
+	(myGlobalEnergy->getInputJcVlMinusWheel(i).overFlow() ^ (JcMinusWheel.at(i)==7))) {
+      cout << "jc Minus " << i << " value " << JcMinusWheel.at(i) <<endl;
+      testPass = false;
+    }
+    if ((myGlobalEnergy->getInputJcValPlusWheel(i).value()!=JcPlusWheel.at(i)) ||
+	(myGlobalEnergy->getInputJcValPlusWheel(i).overFlow() ^ (JcPlusWheel.at(i)==7))) {
+      cout << "jc Plus " << i << " value " << JcPlusWheel.at(i) <<endl;
+      testPass = false;
+    }
+  }
+
+  // Check the outputs
+  for (unsigned int j=0 ; j<L1GctWheelJetFpga::N_JET_COUNTERS ; j++) {
+    if ((myGlobalEnergy->getJetCount(j).value() != JcResult.at(j)) || 
+	(myGlobalEnergy->getJetCount(j).overFlow() ^ (JcResult.at(j)==31))) { 
+      cout << "Algo jCount" << endl;
+      cout << "Expected " << JcResult.at(j) << " found " << myGlobalEnergy->getJetCount(j) << endl;
+      cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl;
+      cout << *myGlobalEnergy->getPlusWheelJetFpga() << endl;
+      cout << "MinusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl;
+      cout << *myGlobalEnergy->getMinusWheelJetFpga() << endl;
+      testPass = false;
+    }
+  }
+  return testPass;
 }
 
+//
+// Function definition for jet count checking
+//=========================================================================
+// Does what it says ...
+unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const unsigned Wheel)
+{
+  unsigned count = 0;
+  L1GctJcWheelType dummy;
+  const unsigned MAX_VALUE = (1<<(dummy.size()))-1;
+
+  for (unsigned i=0; i<jetList.size(); i++) {
+    bool jetPassesCut = false;
+    switch (jcnum) {
+    case (0) :
+      jetPassesCut = (jetList.at(i).rank() >= 5);
+      break;
+
+    case (1) :
+      jetPassesCut = (jetList.at(i).eta() <= 5);
+      break;
+
+    case (2) :
+      jetPassesCut = (jetList.at(i).eta() >= 6) && (Wheel == 0);
+      break;
+
+    case (3) :
+      jetPassesCut = (jetList.at(i).eta() >= 6) && (Wheel == 1);
+      break;
+
+    default :
+      break;
+
+    }
+    if (jetPassesCut && (count<MAX_VALUE)) { count++; }
+  }
+  return count;
+}
 
 // // Loads test input regions from a text file.
 // void loadTestData(RegionsVector &regions, JetsVector &jets, const string &fileName)
