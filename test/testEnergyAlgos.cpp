@@ -259,7 +259,7 @@ etmiss_vec randomMissingEtVector()
   // Copy to the output
   etmiss_vec Et;
   Et.mag = Emag;
-  Et.phi = (4*Ephi)+2;
+  Et.phi = (4*Ephi);
   return Et;
 
 }
@@ -308,19 +308,16 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   int eyMinusVl = 0;
   unsigned etMinusVl = 0;
 
-  // Find the expected sums
   int strip = 0;
-  for (int leaf=0; leaf<3; leaf++) {
-    for (int i=0; i<6; i++) {
-      unsigned et = etStripSums.at(strip);
-      int ex = etComponent(et, ((2*strip+1 )%36) );
-      int ey = etComponent(et, ((2*strip+10)%36) );
-      strip++;
+  // Find the expected sums for the Minus end
+  for ( ; strip<18; strip++) {
+    unsigned et = etStripSums.at(strip);
+    int ex = etComponent(et, ((2*strip+9)%36) );
+    int ey = etComponent(et, (( 2*strip )%36) );
 
-      exMinusVl += ex;
-      eyMinusVl += ey;
-      etMinusVl += et; 
-    }
+    exMinusVl += ex;
+    eyMinusVl += ey;
+    etMinusVl += et; 
   }
   bool exMinusOvrFlow = (exMinusVl<-2048) || (exMinusVl>=2048) || inMinusOvrFlow;
   bool eyMinusOvrFlow = (eyMinusVl<-2048) || (eyMinusVl>=2048) || inMinusOvrFlow;
@@ -330,17 +327,15 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   int eyPlusVal = 0;
   unsigned etPlusVal = 0;
 
-  for (int leaf=3; leaf<6; leaf++) {
-    for (int i=0; i<6; i++) {
-      unsigned et = etStripSums.at(strip);
-      int ex = etComponent(et, ((2*strip+1 )%36) );
-      int ey = etComponent(et, ((2*strip+10)%36) );
-      strip++;
+  // Find the expected sums for the Plus end
+  for ( ; strip<36; strip++) {
+    unsigned et = etStripSums.at(strip);
+    int ex = etComponent(et, ((2*strip+9)%36) );
+    int ey = etComponent(et, (( 2*strip )%36) );
 
-      exPlusVal += ex;
-      eyPlusVal += ey;
-      etPlusVal += et; 
-    }
+    exPlusVal += ex;
+    eyPlusVal += ey;
+    etPlusVal += et; 
   }
   bool exPlusOverFlow = (exPlusVal<-2048) || (exPlusVal>=2048) || inPlusOverFlow;
   bool eyPlusOverFlow = (eyPlusVal<-2048) || (eyPlusVal>=2048) || inPlusOverFlow;
@@ -566,8 +561,8 @@ unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
   }
 
   // Find the eta and phi for this jet, and check
-  unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).eta());
-  unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).phi());
+  unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).jfLocalEta());
+  unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).jfLocalPhi());
 
   if (phi>1 || eta>=(COL_OFFSET-1)) {
     cout << "Invalid eta, phi for jet: " << eta << ", " << phi << endl;
