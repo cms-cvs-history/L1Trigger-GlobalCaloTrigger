@@ -524,7 +524,7 @@ bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
   unsigned result=jlc->getOutputHt().value();
   unsigned sumHt=0;
 
-  for (int i=0; i<L1GctJetFinder::MAX_JETS_OUT; i++) {
+  for (unsigned i=0; i<L1GctJetFinder::MAX_JETS_OUT; i++) {
     if (!jlc->getOutputJetsA().at(i).isNullJet()) {
       jetList.push_back(jlc->getOutputJetsA().at(i));
       sumHt += jetHtSum(jlc->getJetFinderA(), i);
@@ -551,6 +551,14 @@ unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
 
   // We need to take the eta and phi, and go back to the
   // raw data, since the raw energy sum is not stored
+  /// *** NOTE ***
+  // Now we can do this with the new rankForHt() method on L1GctJet:
+  //
+  // return static_cast<unsigned>(jf->getJets().at(jn).rankForHt());
+  //
+  // But leave it like this for now as it's a good check.
+  /// *** NOTE ***
+
   vector<L1GctRegion>inputRegions = jf->getInputRegions();
   const unsigned COL_OFFSET = ((L1GctMap::N_RGN_ETA)/2)+1;
 
