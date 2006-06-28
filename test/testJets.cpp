@@ -24,7 +24,7 @@ int main()
  
     // Open source card input files
     cout << "Opening input source card files" << endl;
-    gct->openSourceCardFiles("data/testElectronsRct_"); 
+    gct->openSourceCardFiles("data/testJetsRct_"); 
 
     // clear everything
     cout << "Reset the GCT" << endl; 
