@@ -26,7 +26,7 @@
 
 //Custom headers needed for this test
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctMap.h"
-#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctRegion.h"
+#include "DataFormats/L1CaloTrigger/interface/L1CaloRegion.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctEtTypes.h"
 
@@ -41,7 +41,7 @@ using namespace std;
 
 //Typedefs for the vector templates used
         struct etmiss_vec { unsigned mag; unsigned phi;};
-// typedef vector<L1GctRegion> RegionsVector;
+// typedef vector<L1CaloRegion> RegionsVector;
 typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
@@ -201,8 +201,16 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
     unsigned etaRegion = i;
     unsigned phiRegion = etVector.phi/4;
         
-    L1GctRegion temp(map->id(etaRegion,phiRegion), etVector.mag, false, false, false, false);
-    gct->setRegion(temp);
+    unsigned crate = 0;
+    unsigned rgn = 0;
+    if ((etaRegion<4) || (etaRegion>=(L1GctMap::N_RGN_ETA-4))) { 
+      L1CaloRegion temp(etVector.mag, false, false, crate, rgn);
+      gct->setRegion(temp);
+    } else {
+      unsigned card = 0;
+      L1CaloRegion temp(etVector.mag, false, false, false, false, crate, card, rgn);
+      gct->setRegion(temp);
+    }
 
     // Here we fill the expected values
     if (etaRegion<(L1GctMap::N_RGN_ETA)/2) {
@@ -559,7 +567,7 @@ unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
   // But leave it like this for now as it's a good check.
   /// *** NOTE ***
 
-  vector<L1GctRegion>inputRegions = jf->getInputRegions();
+  vector<L1CaloRegion>inputRegions = jf->getInputRegions();
   const unsigned COL_OFFSET = ((L1GctMap::N_RGN_ETA)/2)+1;
 
   // Check the input array size

@@ -20,18 +20,18 @@
 #include <bitset>
 using namespace std;
 
-typedef vector<L1GctEmCand> ElecVector;
-typedef vector<L1GctRegion> Region;
+typedef vector<L1CaloEmCand> ElecVector;
+typedef vector<L1CaloRegion> Region;
 typedef unsigned long int ULong;
 
 //Global vectors, bitsets, etc, to hold output data
 ULong currentBX;
-vector<L1GctEmCand> isoElectronsOut;  
-vector<L1GctEmCand> nonIsoElectronsOut;
+vector<L1CaloEmCand> isoElectronsOut;  
+vector<L1CaloEmCand> nonIsoElectronsOut;
 unsigned mipBitsOut;
 unsigned quietBitsOut;
-vector<L1GctRegion> regionsOutT2;
-vector<L1GctRegion> regionsOutT3;
+vector<L1CaloRegion> regionsOutT2;
+vector<L1CaloRegion> regionsOutT3;
 
 //Global file output
 ofstream fout;
@@ -47,9 +47,9 @@ void outputDataToFile(ofstream& fout);
 /// Function to safely open output files of any name, using a referenced return ofstream
 void safeOpenOutputFile(ofstream &fout, const string name);
 /// Converts the EmCand info back into the original RCT output format and returns as a ULong
-ULong compressElectronData(L1GctEmCand& emCand);
+ULong compressElectronData(L1CaloEmCand& emCand);
 /// Converts central Region info back into the original RCT output format and returns as a ULong
-ULong compressCentralRegionData(L1GctRegion& region);
+ULong compressCentralRegionData(L1CaloRegion& region);
 
 
 int main(int argc, char **argv)
@@ -172,20 +172,20 @@ void safeOpenOutputFile(ofstream &fout, const string name)
 }
 
 // Converts the EmCand info back into the original RCT output format and returns as a ULong
-ULong compressElectronData(L1GctEmCand& emCand)
+ULong compressElectronData(L1CaloEmCand& emCand)
 {
   ULong rank = emCand.rank();
-  ULong phi  = emCand.phi();
-  ULong eta  = emCand.eta();
+  ULong rgn  = emCand.rctRegion();
+  ULong card = emCand.rctCard();
   
-  phi <<= 6;
-  eta <<= 7;
+  rgn  <<= 6;
+  card <<= 7;
   
-  return rank+phi+eta;
+  return rank+rgn+card;
 }
 
 // Converts central Region info back into the original RCT output format and returns as a ULong
-ULong compressCentralRegionData(L1GctRegion& region)
+ULong compressCentralRegionData(L1CaloRegion& region)
 {
   ULong output=0;
   if(region.overFlow()) {output += (1<<10);}
