@@ -18,17 +18,6 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctGlobalEnergyAlgos.h"  //The class to be tested
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelJetFpga.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelEnergyFpga.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetFinder.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetLeafCard.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetEtCalibrationLut.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
-
-//Custom headers needed for this test
-#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctMap.h"
-#include "DataFormats/L1CaloTrigger/interface/L1CaloRegion.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJet.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctEtTypes.h"
 
 //Standard library headers
 #include <fstream>   //for file IO
