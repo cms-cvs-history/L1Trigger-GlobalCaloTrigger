@@ -13,7 +13,6 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h" 
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
 
-#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctDigis.h"
 
 //Standard library headers
 #include <fstream>   //for file IO
@@ -39,8 +38,8 @@ int main()
   cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
   cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
   for(unsigned int i=0;i!=electrons.size();i++){
-    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].eta()<<"     "<<electrons[i].phi()<<
-    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].eta()<<"     "<<nonIso[i].phi()<<endl;
+    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].level1EtaIndex()<<"     "<<electrons[i].level1PhiIndex()<<
+    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].level1EtaIndex()<<"     "<<nonIso[i].level1PhiIndex()<<endl;
   }
 
   //Open source card files and look at the electrons in there
@@ -55,8 +54,8 @@ int main()
     cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
     cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
     for(unsigned int i=0;i!=newIso.size();i++){
-      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].eta()<<"     "<<newIso[i].phi()<<
-	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].eta()<<"     "<<newnonIso[i].phi()<<endl;
+      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].level1EtaIndex()<<"     "<<newIso[i].level1PhiIndex()<<
+	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].level1EtaIndex()<<"     "<<newnonIso[i].level1PhiIndex()<<endl;
     }
     cout<<"END OF TEST PROGRAM"<<endl;
   }
