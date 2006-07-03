@@ -44,25 +44,20 @@ int main()
 
   //Open source card files and look at the electrons in there
   cout<<"testelectrons open file?"<<endl;
-<<<<<<< testElectrons.cpp
-    std::string fileName = "testElectronsRct_";
-    //gct->openSourceCardFiles(fileName);
-=======
-    std::string fileName = "data/testElectronsRct_";
-    gct->openSourceCardFiles(fileName);
->>>>>>> 1.6
-    cout<<"about to process..."<<endl;
-    gct->process();
-    //gct->print();
-    vector<L1GctEmCand> newIso = gct->getIsoElectrons();
-    vector<L1GctEmCand> newnonIso = gct->getNonIsoElectrons();
-    cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
-    cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
-    for(unsigned int i=0;i!=newIso.size();i++){
-      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].etaIndex()<<"     "<<newIso[i].phiIndex()<<
-	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].etaIndex()<<"     "<<newnonIso[i].phiIndex()<<endl;
-    }
-    cout<<"END OF TEST PROGRAM"<<endl;
+  std::string fileName = "testElectronsRct_";
+  gct->openSourceCardFiles(fileName);
+  cout<<"about to process..."<<endl;
+  gct->process();
+  //gct->print();
+  vector<L1GctEmCand> newIso = gct->getIsoElectrons();
+  vector<L1GctEmCand> newnonIso = gct->getNonIsoElectrons();
+  cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
+  cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
+  for(unsigned int i=0;i!=newIso.size();i++){
+    cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].etaIndex()<<"     "<<newIso[i].phiIndex()<<
+      "         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].etaIndex()<<"     "<<newnonIso[i].phiIndex()<<endl;
+  }
+  cout<<"END OF TEST PROGRAM"<<endl;
   }
   catch(std::exception e){
     cerr << e.what() << endl;
