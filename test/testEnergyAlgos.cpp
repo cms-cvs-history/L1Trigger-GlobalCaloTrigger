@@ -171,9 +171,6 @@ void generateTestData(vector<unsigned> &energies, int size, unsigned max);
 void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
 	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow)
 {
-  // For (eta,phi) mapping of input regions
-  L1GctMap* map = L1GctMap::getMap();
-
   for (int i=0; i<36; i++) {
     etStripSums.at(i)=0;
   }
@@ -184,7 +181,7 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   // Then test with summing multiple regions. Choose one value
   // of energy and phi for each eta to avoid trying to set the
   // same region several times.
-  for (unsigned i=0; i<(simpleEvent ? 1 : L1GctMap::N_RGN_ETA); i++) {
+  for (unsigned i=0; i<(simpleEvent ? 1 : L1GctJet::N_RGN_ETA); i++) {
     etmiss_vec etVector=randomMissingEtVector();
     // Set a single region input
     unsigned etaRegion = i;
@@ -192,7 +189,7 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
         
     unsigned crate = 0;
     unsigned rgn = 0;
-    if ((etaRegion<4) || (etaRegion>=(L1GctMap::N_RGN_ETA-4))) { 
+    if ((etaRegion<4) || (etaRegion>=(L1GctJet::N_RGN_ETA-4))) { 
       L1CaloRegion temp(etVector.mag, false, false, crate, rgn);
       gct->setRegion(temp);
     } else {
@@ -202,11 +199,11 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
     }
 
     // Here we fill the expected values
-    if (etaRegion<(L1GctMap::N_RGN_ETA)/2) {
+    if (etaRegion<(L1GctJet::N_RGN_ETA)/2) {
       etStripSums.at(phiRegion) += etVector.mag;
       inMinusOvrFlow |= (etVector.mag>=0x400);
     } else {
-      etStripSums.at(phiRegion+L1GctMap::N_RGN_PHI) += etVector.mag;
+      etStripSums.at(phiRegion+L1GctJet::N_RGN_PHI) += etVector.mag;
       inPlusOverFlow |= (etVector.mag>=0x400);
     }
   }
@@ -557,7 +554,7 @@ unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
   /// *** NOTE ***
 
   vector<L1CaloRegion>inputRegions = jf->getInputRegions();
-  const unsigned COL_OFFSET = ((L1GctMap::N_RGN_ETA)/2)+1;
+  const unsigned COL_OFFSET = ((L1GctJet::N_RGN_ETA)/2)+1;
 
   // Check the input array size
   if (inputRegions.size()!=(COL_OFFSET*4)) {
@@ -566,8 +563,8 @@ unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
   }
 
   // Find the eta and phi for this jet, and check
-  unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).jfLocalEta());
-  unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).jfLocalPhi());
+  unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).rctEta());
+  unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).rctPhi());
 
   if (phi>1 || eta>=(COL_OFFSET-1)) {
     cout << "Invalid eta, phi for jet: " << eta << ", " << phi << endl;
@@ -668,15 +665,15 @@ unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const u
       break;
 
     case (1) :
-      jetPassesCut = (jetList.at(i).eta() <= 5);
+      jetPassesCut = (jetList.at(i).globalEta() <= 5);
       break;
 
     case (2) :
-      jetPassesCut = (jetList.at(i).eta() >= 6) && (Wheel == 0);
+      jetPassesCut = (jetList.at(i).globalEta() >= 6) && (Wheel == 0);
       break;
 
     case (3) :
-      jetPassesCut = (jetList.at(i).eta() >= 6) && (Wheel == 1);
+      jetPassesCut = (jetList.at(i).globalEta() >= 6) && (Wheel == 1);
       break;
 
     default :
