@@ -29,7 +29,7 @@ using namespace std;
 int main()
 {
   try { 
-  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(1);
+  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(0);
   
   //gct->print();
   //Firstly, check that there's nothing in the buffers of the GCT
@@ -38,14 +38,19 @@ int main()
   cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
   cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
   for(unsigned int i=0;i!=electrons.size();i++){
-    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].level1EtaIndex()<<"     "<<electrons[i].level1PhiIndex()<<
-    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].level1EtaIndex()<<"     "<<nonIso[i].level1PhiIndex()<<endl;
+    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].etaIndex()<<"     "<<electrons[i].level1PhiIndex()<<
+    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].etaIndex()<<"     "<<nonIso[i].level1PhiIndex()<<endl;
   }
 
   //Open source card files and look at the electrons in there
   cout<<"testelectrons open file?"<<endl;
+<<<<<<< testElectrons.cpp
+    std::string fileName = "testElectronsRct_";
+    //gct->openSourceCardFiles(fileName);
+=======
     std::string fileName = "data/testElectronsRct_";
     gct->openSourceCardFiles(fileName);
+>>>>>>> 1.6
     cout<<"about to process..."<<endl;
     gct->process();
     //gct->print();
@@ -54,8 +59,8 @@ int main()
     cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
     cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
     for(unsigned int i=0;i!=newIso.size();i++){
-      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].level1EtaIndex()<<"     "<<newIso[i].level1PhiIndex()<<
-	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].level1EtaIndex()<<"     "<<newnonIso[i].level1PhiIndex()<<endl;
+      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].etaIndex()<<"     "<<newIso[i].level1PhiIndex()<<
+	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].etaIndex()<<"     "<<newnonIso[i].level1PhiIndex()<<endl;
     }
     cout<<"END OF TEST PROGRAM"<<endl;
   }
