@@ -38,8 +38,8 @@ int main()
   cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
   cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
   for(unsigned int i=0;i!=electrons.size();i++){
-    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].etaIndex()<<"     "<<electrons[i].level1PhiIndex()<<
-    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].etaIndex()<<"     "<<nonIso[i].level1PhiIndex()<<endl;
+    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].etaIndex()<<"     "<<electrons[i].phiIndex()<<
+    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].etaIndex()<<"     "<<nonIso[i].phiIndex()<<endl;
   }
 
   //Open source card files and look at the electrons in there
@@ -59,8 +59,8 @@ int main()
     cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
     cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
     for(unsigned int i=0;i!=newIso.size();i++){
-      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].etaIndex()<<"     "<<newIso[i].level1PhiIndex()<<
-	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].etaIndex()<<"     "<<newnonIso[i].level1PhiIndex()<<endl;
+      cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].etaIndex()<<"     "<<newIso[i].phiIndex()<<
+	"         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].etaIndex()<<"     "<<newnonIso[i].phiIndex()<<endl;
     }
     cout<<"END OF TEST PROGRAM"<<endl;
   }
