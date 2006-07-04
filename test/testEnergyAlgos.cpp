@@ -88,7 +88,8 @@ string classTest()
 
   for (int t=0; t<maxTests; t++)
     {
-      if (t<initialTests) { cout << "Test " << t << endl; }
+      if (t <initialTests) { cout << "Test " << t << endl; }
+      if (t==initialTests) { cout << "Test class has passed initial simple tests!" << endl; }
       // Initialise the gct
       gct->reset();
 
@@ -177,6 +178,17 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   inMinusOvrFlow = false;
   inPlusOverFlow = false;
 
+  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  // initialisation
+  // hopefully a temporary kludge as this should be done by gct->reset()
+  for (unsigned eta=0; eta<22; eta++) {
+    for (unsigned phi=0; phi<18; phi++) {
+      gct->setRegion(0, eta, phi);
+    }
+  }
+  // end of temporary kludge
+  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
   // For initial tests just try things out with one region input
   // Then test with summing multiple regions. Choose one value
   // of energy and phi for each eta to avoid trying to set the
@@ -186,25 +198,27 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
     // Set a single region input
     unsigned etaRegion = i;
     unsigned phiRegion = etVector.phi/4;
-        
-    unsigned crate = 0;
-    unsigned rgn = 0;
-    if ((etaRegion<4) || (etaRegion>=(L1GctJet::N_RGN_ETA-4))) { 
-      L1CaloRegion temp(etVector.mag, false, false, crate, rgn);
-      gct->setRegion(temp);
-    } else {
-      unsigned card = 0;
-      L1CaloRegion temp(etVector.mag, false, false, false, false, crate, card, rgn);
-      gct->setRegion(temp);
-    }
 
-    // Here we fill the expected values
+    gct->setRegion(etVector.mag, etaRegion, phiRegion);
+        
+    // Here we fill the expected values. Et values restricted to
+    // eight bits in HF and ten bits in the rest of the system.
     if (etaRegion<(L1GctJet::N_RGN_ETA)/2) {
-      etStripSums.at(phiRegion) += etVector.mag;
-      inMinusOvrFlow |= (etVector.mag>=0x400);
+      if (etaRegion<4) {
+	etStripSums.at(phiRegion) += (etVector.mag & 0xff);
+	inMinusOvrFlow |= (etVector.mag>=0x100);
+      } else {
+	etStripSums.at(phiRegion) += (etVector.mag & 0x3ff);
+	inMinusOvrFlow |= (etVector.mag>=0x400);
+      }
     } else {
-      etStripSums.at(phiRegion+L1GctJet::N_RGN_PHI) += etVector.mag;
-      inPlusOverFlow |= (etVector.mag>=0x400);
+      if (etaRegion>=18) {
+	etStripSums.at(phiRegion+L1GctJet::N_RGN_PHI) += (etVector.mag & 0xff);
+	inPlusOverFlow |= (etVector.mag>=0x100);
+      } else {
+	etStripSums.at(phiRegion+L1GctJet::N_RGN_PHI) += (etVector.mag & 0x3ff);
+	inPlusOverFlow |= (etVector.mag>=0x400);
+      }
     }
   }
 }
@@ -306,6 +320,13 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   // Find the expected sums for the Minus end
   for ( ; strip<18; strip++) {
     unsigned et = etStripSums.at(strip);
+
+    unsigned rctStrip = (40-strip)%18 + 18*(strip/18);
+    L1GctJetLeafCard* jlc = gct->getJetLeafCards().at(rctStrip/6);
+    L1GctJetFinderBase* jf = ((rctStrip%6)/2==0) ? jlc->getJetFinderA() :
+      ( ((rctStrip%6)/2==1) ? jlc->getJetFinderB() : jlc->getJetFinderC() );
+    L1GctScalarEtVal gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
+
     int ex = etComponent(et, ((2*strip+9)%36) );
     int ey = etComponent(et, (( 2*strip )%36) );
 
@@ -324,6 +345,13 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   // Find the expected sums for the Plus end
   for ( ; strip<36; strip++) {
     unsigned et = etStripSums.at(strip);
+
+    unsigned rctStrip = (40-strip)%18 + 18*(strip/18);
+    L1GctJetLeafCard* jlc = gct->getJetLeafCards().at(rctStrip/6);
+    L1GctJetFinderBase* jf = ((rctStrip%6)/2==0) ? jlc->getJetFinderA() :
+      ( ((rctStrip%6)/2==1) ? jlc->getJetFinderB() : jlc->getJetFinderC() );
+    L1GctScalarEtVal gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
+
     int ex = etComponent(et, ((2*strip+9)%36) );
     int ey = etComponent(et, (( 2*strip )%36) );
 
@@ -635,7 +663,7 @@ bool checkJetCounts(const L1GlobalCaloTrigger* gct,
   for (unsigned int j=0 ; j<L1GctWheelJetFpga::N_JET_COUNTERS ; j++) {
     if ((myGlobalEnergy->getJetCount(j).value() != JcResult.at(j)) || 
 	(myGlobalEnergy->getJetCount(j).overFlow() ^ (JcResult.at(j)==31))) { 
-      cout << "Algo jCount" << endl;
+      cout << "Algo jCount " << j << endl;
       cout << "Expected " << JcResult.at(j) << " found " << myGlobalEnergy->getJetCount(j) << endl;
       cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl;
       cout << *myGlobalEnergy->getPlusWheelJetFpga() << endl;
@@ -665,15 +693,15 @@ unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const u
       break;
 
     case (1) :
-      jetPassesCut = (jetList.at(i).globalEta() <= 5);
+      jetPassesCut = (jetList.at(i).globalEta() >=5) && (jetList.at(i).globalEta() <= 16);
       break;
 
     case (2) :
-      jetPassesCut = (jetList.at(i).globalEta() >= 6) && (Wheel == 0);
+      jetPassesCut = (jetList.at(i).globalEta() < 5) && (Wheel == 0);
       break;
 
     case (3) :
-      jetPassesCut = (jetList.at(i).globalEta() >= 6) && (Wheel == 1);
+      jetPassesCut = (jetList.at(i).globalEta() >16) && (Wheel == 1);
       break;
 
     default :
