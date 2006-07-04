@@ -29,4 +29,7 @@
 <bin name=testSourceCard file=testSourceCard.cpp>
 </bin>
 
+<bin name=testJetEtCalibrationLut file=testJetEtCalibrationLut.cpp>
+</bin>
+
 
