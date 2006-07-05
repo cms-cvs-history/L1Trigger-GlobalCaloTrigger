@@ -178,17 +178,6 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   inMinusOvrFlow = false;
   inPlusOverFlow = false;
 
-  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-  // initialisation
-  // hopefully a temporary kludge as this should be done by gct->reset()
-  for (unsigned eta=0; eta<22; eta++) {
-    for (unsigned phi=0; phi<18; phi++) {
-      gct->setRegion(0, eta, phi);
-    }
-  }
-  // end of temporary kludge
-  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
   // For initial tests just try things out with one region input
   // Then test with summing multiple regions. Choose one value
   // of energy and phi for each eta to avoid trying to set the
