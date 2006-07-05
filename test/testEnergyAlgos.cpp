@@ -489,7 +489,7 @@ etmiss_vec trueMissingEt(const int ex, const int ey) {
 /// Checks the Ht calculation in a leaf card and returns the Ht sum
 bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt);
 /// Works out the Ht for a jet from the raw input regions
-unsigned jetHtSum(L1GctJetFinder* jf, int jn);
+unsigned jetHtSum(L1GctJetFinderBase* jf, int jn);
 //=========================================================================
 /// Check the Ht summing algorithms
 bool checkHtSums(const L1GlobalCaloTrigger* gct, JetsVector &MinusWheelJets, JetsVector &PlusWheelJets)
@@ -546,7 +546,7 @@ bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
   unsigned result=jlc->getOutputHt().value();
   unsigned sumHt=0;
 
-  for (unsigned i=0; i<L1GctJetFinder::MAX_JETS_OUT; i++) {
+  for (unsigned i=0; i<L1GctJetFinderBase::MAX_JETS_OUT; i++) {
     if (!jlc->getOutputJetsA().at(i).isNullJet()) {
       jetList.push_back(jlc->getOutputJetsA().at(i));
       sumHt += jetHtSum(jlc->getJetFinderA(), i);
@@ -569,7 +569,7 @@ bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
 // Function definitions for Ht sum checking
 //=========================================================================
 /// Work out the Ht for a jet.
-unsigned jetHtSum(L1GctJetFinder* jf, int jn) {
+unsigned jetHtSum(L1GctJetFinderBase* jf, int jn) {
 
   // We need to take the eta and phi, and go back to the
   // raw data, since the raw energy sum is not stored
