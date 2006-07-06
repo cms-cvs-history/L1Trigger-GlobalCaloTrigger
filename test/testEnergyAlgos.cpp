@@ -182,7 +182,7 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   // Then test with summing multiple regions. Choose one value
   // of energy and phi for each eta to avoid trying to set the
   // same region several times.
-  for (unsigned i=0; i<(simpleEvent ? 1 : L1GctJet::N_RGN_ETA); i++) {
+  for (unsigned i=0; i<(simpleEvent ? 1 : L1CaloRegionDetId::N_ETA); i++) {
     etmiss_vec etVector=randomMissingEtVector();
     // Set a single region input
     unsigned etaRegion = i;
@@ -192,7 +192,7 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
         
     // Here we fill the expected values. Et values restricted to
     // eight bits in HF and ten bits in the rest of the system.
-    if (etaRegion<(L1GctJet::N_RGN_ETA)/2) {
+    if (etaRegion<(L1CaloRegionDetId::N_ETA)/2) {
       if (etaRegion<4) {
 	etStripSums.at(phiRegion) += (etVector.mag & 0xff);
 	inMinusOvrFlow |= (etVector.mag>=0x100);
@@ -202,10 +202,10 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
       }
     } else {
       if (etaRegion>=18) {
-	etStripSums.at(phiRegion+L1GctJet::N_RGN_PHI) += (etVector.mag & 0xff);
+	etStripSums.at(phiRegion+L1CaloRegionDetId::N_PHI) += (etVector.mag & 0xff);
 	inPlusOverFlow |= (etVector.mag>=0x100);
       } else {
-	etStripSums.at(phiRegion+L1GctJet::N_RGN_PHI) += (etVector.mag & 0x3ff);
+	etStripSums.at(phiRegion+L1CaloRegionDetId::N_PHI) += (etVector.mag & 0x3ff);
 	inPlusOverFlow |= (etVector.mag>=0x400);
       }
     }
@@ -571,7 +571,7 @@ unsigned jetHtSum(L1GctJetFinderBase* jf, int jn) {
   /// *** NOTE ***
 
   vector<L1CaloRegion>inputRegions = jf->getInputRegions();
-  const unsigned COL_OFFSET = ((L1GctJet::N_RGN_ETA)/2)+1;
+  const unsigned COL_OFFSET = ((L1CaloRegionDetId::N_ETA)/2)+1;
 
   // Check the input array size
   if (inputRegions.size()!=(COL_OFFSET*4)) {
