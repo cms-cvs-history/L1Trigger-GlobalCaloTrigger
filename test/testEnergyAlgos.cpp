@@ -84,7 +84,8 @@ string classTest()
   const int initialTests=100;
  
   // Initialise the gct
-  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false);
+//   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::hardwareJetFinder);
+  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::tdrJetFinder);
 
   for (int t=0; t<maxTests; t++)
     {
@@ -184,6 +185,7 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   // same region several times.
   for (unsigned i=0; i<(simpleEvent ? 1 : L1CaloRegionDetId::N_ETA); i++) {
     etmiss_vec etVector=randomMissingEtVector();
+//     cout << "Region et " << etVector.mag << " phi " << etVector.phi << endl;
     // Set a single region input
     unsigned etaRegion = i;
     unsigned phiRegion = etVector.phi/4;
@@ -537,14 +539,23 @@ bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
 
   for (unsigned i=0; i<L1GctJetFinderBase::MAX_JETS_OUT; i++) {
     if (!jlc->getOutputJetsA().at(i).isNullJet()) {
+//       cout << "found a jet " << jlc->getOutputJetsA().at(i).rank()
+// 	   << " eta " << jlc->getOutputJetsA().at(i).globalEta()
+// 	   << " phi " << jlc->getOutputJetsA().at(i).globalPhi() << endl;
       jetList.push_back(jlc->getOutputJetsA().at(i));
       sumHt += jetHtSum(jlc->getJetFinderA(), i);
     }
     if (!jlc->getOutputJetsB().at(i).isNullJet()) {
+//       cout << "found a jet " << jlc->getOutputJetsB().at(i).rank()
+// 	   << " eta " << jlc->getOutputJetsB().at(i).globalEta()
+// 	   << " phi " << jlc->getOutputJetsB().at(i).globalPhi() << endl;
       jetList.push_back(jlc->getOutputJetsB().at(i));
       sumHt += jetHtSum(jlc->getJetFinderB(), i);
     }
     if (!jlc->getOutputJetsC().at(i).isNullJet()) {
+//       cout << "found a jet " << jlc->getOutputJetsC().at(i).rank()
+// 	   << " eta " << jlc->getOutputJetsC().at(i).globalEta()
+// 	   << " phi " << jlc->getOutputJetsC().at(i).globalPhi() << endl;
       jetList.push_back(jlc->getOutputJetsC().at(i));
       sumHt += jetHtSum(jlc->getJetFinderC(), i);
     }
