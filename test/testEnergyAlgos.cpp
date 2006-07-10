@@ -84,8 +84,8 @@ string classTest()
   const int initialTests=100;
  
   // Initialise the gct
-//   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::hardwareJetFinder);
-  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::tdrJetFinder);
+  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::hardwareJetFinder);
+//   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::tdrJetFinder);
 
   for (int t=0; t<maxTests; t++)
     {
@@ -571,47 +571,47 @@ bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
 /// Work out the Ht for a jet.
 unsigned jetHtSum(L1GctJetFinderBase* jf, int jn) {
 
-  // We need to take the eta and phi, and go back to the
-  // raw data, since the raw energy sum is not stored
-  /// *** NOTE ***
-  // Now we can do this with the new rankForHt() method on L1GctJet:
   //
-  // return static_cast<unsigned>(jf->getJets().at(jn).rankForHt());
+  return static_cast<unsigned>(jf->getJets().at(jn).rankForHt());
   //
-  // But leave it like this for now as it's a good check.
-  /// *** NOTE ***
 
-  vector<L1CaloRegion>inputRegions = jf->getInputRegions();
-  const unsigned COL_OFFSET = ((L1CaloRegionDetId::N_ETA)/2)+1;
+  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  // // The following code (commented) goes back to the original
+  // // inputRegions and works out the expected jet rank.
+  // // It only works for the tdr jetFinder though.
+//   vector<L1CaloRegion>inputRegions = jf->getInputRegions();
+//   const unsigned COL_OFFSET = ((L1CaloRegionDetId::N_ETA)/2)+1;
 
-  // Check the input array size
-  if (inputRegions.size()!=(COL_OFFSET*4)) {
-    cout << "Invalid size for jet finder input " << inputRegions.size() << " expecting " << (COL_OFFSET*4) << endl;
-    return 0;
-  }
+//   // Check the input array size
+//   if (inputRegions.size()!=(COL_OFFSET*4)) {
+//     cout << "Invalid size for jet finder input " << inputRegions.size() << " expecting " << (COL_OFFSET*4) << endl;
+//     return 0;
+//   }
 
-  // Find the eta and phi for this jet, and check
-  unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).rctEta());
-  unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).rctPhi());
+//   // Find the eta and phi for this jet, and check
+//   unsigned eta = static_cast<unsigned>(jf->getJets().at(jn).rctEta());
+//   unsigned phi = static_cast<unsigned>(jf->getJets().at(jn).rctPhi());
 
-  if (phi>1 || eta>=(COL_OFFSET-1)) {
-    cout << "Invalid eta, phi for jet: " << eta << ", " << phi << endl;
-    return 0;
-  }
+//   if (phi>1 || eta>=(COL_OFFSET-1)) {
+//     cout << "Invalid eta, phi for jet: " << eta << ", " << phi << endl;
+//     return 0;
+//   }
 
-  // Sum the et values for the nine regions centred on this eta and phi
-  unsigned rawSum = 0;
+//   // Sum the et values for the nine regions centred on this eta and phi
+//   unsigned rawSum = 0;
 
-  for (unsigned col=phi; col<=phi+2; col++) {
-    rawSum += inputRegions.at(col*COL_OFFSET+eta).et();
-    rawSum += inputRegions.at(col*COL_OFFSET+eta+1).et();
-    if ((eta+2)<COL_OFFSET) {
-      rawSum += inputRegions.at(col*COL_OFFSET+eta+2).et();
-    }
-  }
-  // Convert to Ht and return
-  return static_cast<unsigned>(jf->getJetEtCalLut()->convertToTenBitRank(static_cast<uint16_t>(rawSum),
-									 static_cast<uint16_t>(eta)));
+//   for (unsigned col=phi; col<=phi+2; col++) {
+//     rawSum += inputRegions.at(col*COL_OFFSET+eta).et();
+//     rawSum += inputRegions.at(col*COL_OFFSET+eta+1).et();
+//     if ((eta+2)<COL_OFFSET) {
+//       rawSum += inputRegions.at(col*COL_OFFSET+eta+2).et();
+//     }
+//   }
+//   // Convert to Ht and return
+//   return static_cast<unsigned>(jf->getJetEtCalLut()->convertToTenBitRank(static_cast<uint16_t>(rawSum),
+// 									 static_cast<uint16_t>(eta)));
+  // // end of commented code
+  //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 }
 
 //
