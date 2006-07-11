@@ -28,6 +28,12 @@ using namespace std;
 
 int main()
 {
+  cout << endl;
+  cout << "*********************************" << endl;
+  cout << "  GCT electron processing tester " << endl;
+  cout << "*********************************" << endl;
+
+
   try { 
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(0);
   
