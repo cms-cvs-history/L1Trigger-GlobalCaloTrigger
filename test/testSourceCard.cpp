@@ -63,8 +63,8 @@ int main(int argc, char **argv)
     safeOpenOutputFile(fout, resultsFile);
     
     L1GctSourceCard * mySourceCardT1 = new L1GctSourceCard(0, L1GctSourceCard::cardType1); //test objects
-    L1GctSourceCard * mySourceCardT2 = new L1GctSourceCard(0, L1GctSourceCard::cardType2); 
-    L1GctSourceCard * mySourceCardT3 = new L1GctSourceCard(0, L1GctSourceCard::cardType3);
+    L1GctSourceCard * mySourceCardT2 = new L1GctSourceCard(1, L1GctSourceCard::cardType2); 
+    L1GctSourceCard * mySourceCardT3 = new L1GctSourceCard(2, L1GctSourceCard::cardType3);
       
     //cout << mySourceCardT1 << endl;
     //cout << mySourceCardT2 << endl;
