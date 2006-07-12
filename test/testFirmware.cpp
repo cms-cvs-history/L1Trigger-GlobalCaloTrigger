@@ -1,26 +1,11 @@
-/*! \file testEnergyAlgos.cpp
- * \brief Procedural skeleton unit-test code for the L1Gct(...)EnergyAlgos classes.
+/*! \file testFirmware.cpp
+ * \brief Test the GCT emulator against results from the VHDL algorithms
  *
- * Generates events and passes them through the GCT emulator. The checks performed are
- *   i) The total and missing energy match the values expected from summing the inputs
- *  ii) The Ht matches the sum of energy in jets
- * iii) The jet counts are found as expected
- *
- * The checks on total and missing energy are based on re-calculating the expected values 
- * in this program. The checks on Ht and jet counts are based on the jets found by the GCT.
- * There is no check of the jetfinder itself.
- *
- * This checks some of the code in the JetFinder, JetLeafCard, and WheelJetFpga as well as
- * the complete operation of the WheelEnergyFpga and GlobalEnergyAlgos.
- *
- * The input events are generated using a random number generator. Initial tests load non-zero
- * Et into just one region. The bulk of the tests have 22 regions with non-zero Et; one in
- * each eta bin, with randomly generated phi. 
+ * Update comment when we have decided what the code does!
  *
  * \author Greg Heath
- * \date March 2006
+ * \date July 2006
  */
-
 
 //NOTE all these includes need to be sorted with a proper build include path,
 //rather than a relative path, in order to comply with CMS style.
@@ -40,16 +25,20 @@ using namespace std;
 
 //Typedefs for the vector templates used
         struct etmiss_vec { unsigned mag; unsigned phi;};
-// typedef vector<L1CaloRegion> RegionsVector;
+typedef vector<L1CaloRegion> RegionsVector;
 typedef vector<L1GctJet> JetsVector;
 
 //  FUNCTION PROTOTYPES
 /// Runs the test, and returns a string with the test result message in.
-string classTest();
+string classTest(ifstream &rgnFileIn, ifstream &jetFileIn);
 //
-/// Generate an event, load it into the gct, and return some sums for checking
-void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
+// Function to safely open files of any name, using a referenced return ifstream
+void safeOpenFile(ifstream &fin, const string &name);
+/// Read an event from file, load it into the gct, return some sums for checking
+void loadNextEvent(L1GlobalCaloTrigger* &gct, ifstream &fin, bool &endOfFile,
 	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow);
+/// Check the jet finder against results from the firmware
+bool checkJetFinder(const L1GlobalCaloTrigger* gct, ifstream &fin);
 /// Check the energy sums algorithms
 bool checkEnergySums(const L1GlobalCaloTrigger* gct,
 		     const vector<unsigned> &etStripSums,
@@ -66,13 +55,19 @@ bool checkJetCounts(const L1GlobalCaloTrigger* gct,
 int main(int argc, char **argv)
 {
     cout << "\n*********************************" << endl;
-    cout << "Hello from testEnergyAlgos       " << endl;
+    cout << "   Hello from testFirmware       " << endl;
     cout << "*********************************" << endl;
 
-    srand(290306);
+    // File input stream
+    ifstream rgnFileIn;
+    ifstream jetFileIn;
+    
+    safeOpenFile(rgnFileIn, "PythiaData.txt");  //open the file of region energies
+    safeOpenFile(jetFileIn, "PythiaJets.txt");  //open the file of jets from the firmware
+    
     try
     {
-        cout << "\n" << classTest() << endl;
+        cout << "\n" << classTest(rgnFileIn, jetFileIn) << endl;
     }
     catch(const exception &e)
     {
@@ -82,32 +77,32 @@ int main(int argc, char **argv)
     {
         cerr << "\nError! An unknown exception has occurred!" << endl;
     }
+
+    rgnFileIn.close();
+    jetFileIn.close();
+
     return 0;   
 }
 
 // Runs the test, and returns a string with the test result message in.
-string classTest()
+string classTest(ifstream &rgnFileIn, ifstream &jetFileIn)
 {
   bool testPass = true;       //Test passing flag.
     
-  const int maxTests=10000;
-  const int initialTests=100;
- 
   // Initialise the gct
   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::hardwareJetFinder);
-//   L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(false, L1GctJetLeafCard::tdrJetFinder);
+  gct->reset();
 
-  for (int t=0; t<maxTests; t++)
+  // Read in an event
+  bool endOfFile = false;
+  vector<unsigned> etStripSums(36);
+  bool inMinusOvrFlow, inPlusOverFlow;
+  loadNextEvent(gct, rgnFileIn, endOfFile, etStripSums, inMinusOvrFlow, inPlusOverFlow);
+
+  unsigned t = 0;
+  for ( ; !endOfFile; ++t)
     {
-      if (t <initialTests) { cout << "Test " << t << endl; }
-      if (t==initialTests) { cout << "Test class has passed initial simple tests!" << endl; }
-      // Initialise the gct
-      gct->reset();
-
-      // Generate an event
-      vector <unsigned>etStripSums(36);
-      bool inMinusOvrFlow, inPlusOverFlow;
-      loadNextEvent(gct, (t<initialTests), etStripSums, inMinusOvrFlow, inPlusOverFlow);
+      cout << "Test number " << t << endl;
 
       //
       // Run the processing
@@ -117,11 +112,25 @@ string classTest()
       gct->process();  //Run algorithm
 
       //
+      // Check the jet finder against the firmware
+      //--------------------------------------------------------------------------------------
+      //
+
+      testPass &= checkJetFinder(gct, jetFileIn);
+      if(testPass == false)
+	{
+	  // Print failed events for debug purposes
+	  cout << *gct->getEnergyFinalStage() << endl;
+	  cout << "Failed at test number " << t <<endl;
+	  return "Test class has failed check of jet finder logic!";
+	}
+
+      //
       // Check the energy sum logic
       //--------------------------------------------------------------------------------------
       //
 
-      testPass &= checkEnergySums(gct, etStripSums,inMinusOvrFlow, inPlusOverFlow);
+      testPass &= checkEnergySums(gct, etStripSums, inMinusOvrFlow, inPlusOverFlow);
       if(testPass == false)
 	{
 	  // Print failed events for debug purposes
@@ -162,11 +171,34 @@ string classTest()
 	  cout << "Failed at test number " << t <<endl;
 	  return "Test class has failed check of jet count logic!";
 	}
+
+      // Re-initialise the gct, read in another event,
+      // terminate loop if we encounter end-of-file
+      gct->reset();
+      loadNextEvent(gct, rgnFileIn, endOfFile, etStripSums, inMinusOvrFlow, inPlusOverFlow);
+
     }
-  // Test the print routine at the end
-  cout << *gct->getEnergyFinalStage() << endl;
+  // Only get here if we have successfully processed all events
+  // in the file, and ended the loop with a reset.
+  cout << "Number of events processed is " << t << endl;
   return "Test class has passed!";
 }
+
+// Function to safely open files of any name, using a referenced return ifstream
+void safeOpenFile(ifstream &fin, const string &name)
+{
+    //Opens the file
+    fin.open(name.c_str(), ios::in);
+
+    //Error message, and return false if it goes pair shaped
+    if(!fin.good())
+    {
+        throw std::runtime_error("Couldn't open the file " + name + "!");
+    }
+    return;
+}
+
+
 
 //
 //=========================================================================
@@ -174,13 +206,11 @@ string classTest()
 //=========================================================================
 //
 // FUNCTION PROTOTYPES FOR EVENT GENERATION
-/// Generates test data for missing Et as 2-vector (magnitude, direction)
-etmiss_vec randomMissingEtVector();
-/// Generates test data consisting of energies to be added together with their sum
-void generateTestData(vector<unsigned> &energies, int size, unsigned max);
+/// Read the input region Et values from file
+L1CaloRegion nextRegionFromFile(const unsigned ieta, const unsigned iphi, ifstream &fin);
 //=========================================================================
 /// Generate an event, load it into the gct, and return some sums for checking
-void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
+void loadNextEvent(L1GlobalCaloTrigger* &gct, ifstream &fin, bool &endOfFile,
 	       vector<unsigned> &etStripSums, bool &inMinusOvrFlow, bool &inPlusOverFlow)
 {
   for (int i=0; i<36; i++) {
@@ -189,110 +219,150 @@ void loadNextEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent,
   inMinusOvrFlow = false;
   inPlusOverFlow = false;
 
-  // For initial tests just try things out with one region input
-  // Then test with summing multiple regions. Choose one value
-  // of energy and phi for each eta to avoid trying to set the
-  // same region several times.
-  for (unsigned i=0; i<(simpleEvent ? 1 : L1CaloRegionDetId::N_ETA); i++) {
-    etmiss_vec etVector=randomMissingEtVector();
-//     cout << "Region et " << etVector.mag << " phi " << etVector.phi << endl;
-    // Set a single region input
-    unsigned etaRegion = i;
-    unsigned phiRegion = etVector.phi/4;
-
-    gct->setRegion(etVector.mag, etaRegion, phiRegion);
-        
-    // Here we fill the expected values. Et values restricted to
-    // eight bits in HF and ten bits in the rest of the system.
-    if (etaRegion<(L1CaloRegionDetId::N_ETA)/2) {
-      if (etaRegion<4) {
-	etStripSums.at(phiRegion) += (etVector.mag & 0xff);
-	inMinusOvrFlow |= (etVector.mag>=0x100);
+  // Here we fill the expected values.
+  for (unsigned jphi=0; jphi<L1CaloRegionDetId::N_PHI; ++jphi) {
+    unsigned iphi = (L1CaloRegionDetId::N_PHI + 4 - jphi)%L1CaloRegionDetId::N_PHI;
+    for (unsigned ieta=0; ieta<L1CaloRegionDetId::N_ETA; ++ieta) {
+      L1CaloRegion temp = nextRegionFromFile(ieta, iphi, fin);
+      gct->setRegion(temp);
+      if (ieta<(L1CaloRegionDetId::N_ETA/2)) {
+	unsigned strip = iphi;
+	etStripSums.at(strip) += temp.et();
+	inMinusOvrFlow        |= temp.overFlow();
       } else {
-	etStripSums.at(phiRegion) += (etVector.mag & 0x3ff);
-	inMinusOvrFlow |= (etVector.mag>=0x400);
-      }
-    } else {
-      if (etaRegion>=18) {
-	etStripSums.at(phiRegion+L1CaloRegionDetId::N_PHI) += (etVector.mag & 0xff);
-	inPlusOverFlow |= (etVector.mag>=0x100);
-      } else {
-	etStripSums.at(phiRegion+L1CaloRegionDetId::N_PHI) += (etVector.mag & 0x3ff);
-	inPlusOverFlow |= (etVector.mag>=0x400);
+	unsigned strip = iphi+L1CaloRegionDetId::N_PHI;
+	etStripSums.at(strip) += temp.et();
+	inPlusOverFlow        |= temp.overFlow();
       }
     }
   }
+  endOfFile = fin.eof();
 }
 
 //
 // Function definitions for event generation
 //=========================================================================
-// Generates 2-d missing Et vector
-etmiss_vec randomMissingEtVector()
+// Loads test input regions from a text file.
+L1CaloRegion nextRegionFromFile(const unsigned ieta, const unsigned iphi, ifstream &fin)
 {
-  // This produces random variables distributed as a 2-d Gaussian
-  // with a standard deviation of sigma for each component,
-  // and magnitude ranging up to 5*sigma.
-  //
-  // With sigma set to 400 we will always be in the range
-  // of 12-bit signed integers (-2048 to 2047).
-  // With sigma set to 200 we are always in the range
-  // of 10-bit input region Et values.
-  const float sigma=200.;
-
-  // rmax controls the magnitude range
-  // Chosen as a power of two conveniently close to
-  // exp(5*5/2) to give a 5*sigma range.
-  const unsigned rmax=262144;
-
-  vector<unsigned> components(2);
-  float p,r,s;
-  unsigned Emag, Ephi;
-
-  const float nbins = 18.;
-
-  // Generate a pair of uniform pseudo-random integers
-  generateTestData(components, (int) 2, rmax);
-
-  // Exclude the value zero for the first random integer
-  // (Alternatively, return an overflow bit)
-  while (components[0]==0) {generateTestData(components, (int) 2, rmax);}
-
-  // Convert to the 2-d Gaussian
-  r = float(rmax);
-  s = r/float(components[0]);
-  p = float(components[1])/r;
-  // Force phi value into the centre of a bin
-  Emag = int(sigma*sqrt(2.*log(s)));
-  Ephi = int(nbins*p);
-  // Copy to the output
-  etmiss_vec Et;
-  Et.mag = Emag;
-  Et.phi = (4*Ephi);
-  return Et;
-
+  // The file just contains lists of region energies
+  unsigned et;
+  fin >> et;
+  L1CaloRegion temp(et, false, true, false, false, ieta, iphi);
+  return temp;
 }
-
-/// Generates test data consisting of a vector of energies
-/// uniformly distributed between zero and max
-void generateTestData(vector<unsigned> &energies, int size, unsigned max)
+    
+    
+//
+//=========================================================================
+// Here's the procedure for checking the jet finding
+//=========================================================================
+//
+// FUNCTION PROTOTYPES FOR JET FINDER CHECKING
+/// Read one event's worth of jets from the file
+vector<JetsVector> getJetsFromFile(ifstream &fin);
+/// Read a single jet
+L1GctJet nextJetFromFile (const unsigned jf, ifstream &fin);
+//=========================================================================
+/// Check the jet finder against results from the firmware
+bool checkJetFinder(const L1GlobalCaloTrigger* gct, ifstream &fin)
 {
-  int i;
-  int r,e;
-  float p,q,s,t;
-
-  p = float(max);
-  q = float(RAND_MAX);
-  for (i=0; i<size; i++) {
-    r = rand();
-    s = float(r);
-    t = s*p/q;
-    e = int(t);
-
-    energies[i] = e;
+  bool testPass = true;
+  vector<JetsVector> jetsFromFile(L1CaloRegionDetId::N_PHI);
+  jetsFromFile = getJetsFromFile(fin);
+  unsigned jf = 0;
+  for (int jlc=0; jlc<L1GlobalCaloTrigger::N_JET_LEAF_CARDS; ++jlc) {
+    testPass &= (jetsFromFile.at(jf++) == gct->getJetLeafCards().at(jlc)->getOutputJetsA());
+    testPass &= (jetsFromFile.at(jf++) == gct->getJetLeafCards().at(jlc)->getOutputJetsB());
+    testPass &= (jetsFromFile.at(jf++) == gct->getJetLeafCards().at(jlc)->getOutputJetsC());
   }
+
+  // Diagnostics if we've found an error
+  if (!testPass) {
+    unsigned jf = 0;
+    for (int jlc=0; jlc<L1GlobalCaloTrigger::N_JET_LEAF_CARDS; ++jlc) {
+      for (int i=0; i<3; i++) {
+	JetsVector jetlist1, jetlist2;
+	cout << "Jet Finder " << jf;
+	jetlist1 = jetsFromFile.at(jf++);
+	switch (i) {
+	case 0 :
+	  jetlist2 = gct->getJetLeafCards().at(jlc)->getOutputJetsA(); break;
+	case 1 :
+	  jetlist2 = gct->getJetLeafCards().at(jlc)->getOutputJetsB(); break;
+	case 2 :
+	  jetlist2 = gct->getJetLeafCards().at(jlc)->getOutputJetsC(); break;
+	}
+	bool ok = true;
+	for (unsigned j=0; j<L1GctJetFinderBase::MAX_JETS_OUT; j++) {
+	  if (jetlist1.at(j)!=jetlist2.at(j)) {
+	    cout << "\nJet Number " << j;
+	    cout << "\nexpected " << jetlist1.at(j);
+	    cout << "\nfound    " << jetlist2.at(j) << endl;
+	    ok = false;
+	  }
+	}
+	if (ok) { cout << " all ok!" << endl; }
+      }
+    }
+  }
+
+  return testPass;		 
+
 }
 
+/// Read one event's worth of jets from the file
+vector<JetsVector> getJetsFromFile(ifstream &fin)
+{
+  vector<JetsVector> result;
+  char textFromFile[10];
+  string strFromFile;
+  unsigned jf, ev;
+  fin.width(10);
+  fin >> textFromFile;
+  fin >> ev;
+  strFromFile = textFromFile;
+  assert (strFromFile=="Event");
+  for (unsigned j=0; j<L1CaloRegionDetId::N_PHI; ++j) {
+    fin >> textFromFile;
+    fin >> jf;
+    strFromFile = textFromFile;
+    assert ((strFromFile=="JetFinder") && (jf==j));
+    JetsVector temp;
+    for (unsigned i=0; i<L1GctJetFinderBase::MAX_JETS_OUT; ++i) {
+      temp.push_back(nextJetFromFile(jf, fin));
+    }
+    // Sort the jets coming from the hardware to match the order from the jetFinderBase
+    sort(temp.begin(), temp.end(), L1GctJet::rankGreaterThan());
+    result.push_back(temp);
+  }
+  return result;
+}
+
+/// Read a single jet
+L1GctJet nextJetFromFile (const unsigned jf, ifstream &fin)
+{
+
+  unsigned et, eta, phi;
+  bool of, tv;
+  fin >> et;
+  fin >> of;
+  fin >> tv;
+  fin >> eta;
+  fin >> phi;
+
+  // Declare local constants to save typing
+  const unsigned NE = L1CaloRegionDetId::N_ETA/2;
+  const unsigned NP = L1CaloRegionDetId::N_PHI/2;
+  // Convert local jetfinder to global coordinates
+  unsigned globalEta = (eta==NE) ? 0 : ((jf<NP) ? (NE-eta-1) : (NE+eta));
+  unsigned globalPhi = (eta==NE) ? 0 : (2*((2*(NP+1)-jf)%NP)+(1-phi));
+
+  if (of) { et |= (1<<L1GctJet::RAWSUM_BITWIDTH); }
+
+  L1GctJet temp(et, globalEta, globalPhi, tv);
+  return temp;
+}
 
 //
 //=========================================================================
@@ -322,12 +392,6 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   for ( ; strip<18; strip++) {
     unsigned et = etStripSums.at(strip);
 
-    unsigned rctStrip = (40-strip)%18 + 18*(strip/18);
-    L1GctJetLeafCard* jlc = gct->getJetLeafCards().at(rctStrip/6);
-    L1GctJetFinderBase* jf = ((rctStrip%6)/2==0) ? jlc->getJetFinderA() :
-      ( ((rctStrip%6)/2==1) ? jlc->getJetFinderB() : jlc->getJetFinderC() );
-    L1GctScalarEtVal gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
-
     int ex = etComponent(et, ((2*strip+9)%36) );
     int ey = etComponent(et, (( 2*strip )%36) );
 
@@ -346,12 +410,6 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   // Find the expected sums for the Plus end
   for ( ; strip<36; strip++) {
     unsigned et = etStripSums.at(strip);
-
-    unsigned rctStrip = (40-strip)%18 + 18*(strip/18);
-    L1GctJetLeafCard* jlc = gct->getJetLeafCards().at(rctStrip/6);
-    L1GctJetFinderBase* jf = ((rctStrip%6)/2==0) ? jlc->getJetFinderA() :
-      ( ((rctStrip%6)/2==1) ? jlc->getJetFinderB() : jlc->getJetFinderC() );
-    L1GctScalarEtVal gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
 
     int ex = etComponent(et, ((2*strip+9)%36) );
     int ey = etComponent(et, (( 2*strip )%36) );
@@ -723,50 +781,3 @@ unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const u
   return count;
 }
 
-// // Loads test input regions from a text file.
-// void loadTestData(RegionsVector &regions, JetsVector &jets, const string &fileName)
-// {
-//     // File input stream
-//     ifstream fin;
-    
-//     safeOpenFile(fin, fileName);  //open the file
-    
-//     unsigned long int tempEt = 0;
-//     unsigned short int tempMip = 0;
-//     unsigned short int tempQuiet = 0;
-    
-//     // Loads the input data
-//     for(unsigned int i = 0; i < regions.size(); ++i)
-//     {
-//         //read in the data from the file
-//         fin >> tempEt;
-//         fin >> tempMip;
-//         fin >> tempQuiet;
-        
-//         regions[i].setEt(tempEt);
-//         if(tempMip == 0) { regions[i].setMip(false); } else { regions[i].setMip(true); }
-//         if(tempQuiet == 0) { regions[i].setQuiet(false); } else { regions[i].setQuiet(true); }
-//     }
-    
-//     // Do similar to load the 'known' output jets (that we currently don't know...)
-    
-//     // Close the file
-//     fin.close();    
-        
-//     return;
-// }
-    
-    
-// // Function to safely open files of any name, using a referenced return ifstream
-// void safeOpenFile(ifstream &fin, const string &name)
-// {
-//     //Opens the file
-//     fin.open(name.c_str(), ios::in);
-
-//     //Error message, and return false if it goes pair shaped
-//     if(!fin.good())
-//     {
-//         throw std::runtime_error("Couldn't open the file " + name + "!");
-//     }
-//     return;
-// }
