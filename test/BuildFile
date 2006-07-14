@@ -2,6 +2,9 @@
 <use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
 
+<bin name=printMap file=printMap.cpp>
+</bin>
+
 <bin name=testGctMap file=testGctMap.cpp>
 </bin>
 
