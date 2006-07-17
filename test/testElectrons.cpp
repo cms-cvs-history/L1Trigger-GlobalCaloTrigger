@@ -1,18 +1,18 @@
 /*! \file testElectrons.cpp
- * \test file for testing the (eventually) the full Gct 
+ * \test file for testing the full GCT chain for electrons. 
  *
- *  For now, this test program only handles electrons.
- *  The 54 source cards handles 3 RCT crates each. The first RCT crate on
- *  each source card carries the electrons.
- *
+ * 
  * \author Maria Hansen
  * \date April 2006
  */
 
 
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h" 
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctSourceCard.h"
-
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctElectronSorter.h"
+#include "L1Trigger/GlobalCaloTrigger/interface/L1GctEmLeafCard.h"
+#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctEmCand.h"
+#include "DataFormats/L1CaloTrigger/interface/L1CaloEmCand.h"
+#include "FWCore/Utilities/interface/Exception.h"
 
 //Standard library headers
 #include <fstream>   //for file IO
@@ -20,53 +20,177 @@
 #include <vector>
 #include <iostream>
 #include <sstream>  //for int->char conversion
-
-using std::cout;
-using std::endl;
+#include <exception>
+#include <stdexcept>
 
 using namespace std;
 
+//  Function for reading in the dummy data                                
+void LoadFileData(const string &inputFile);
+//Function to easily output a gctEmCand vector to screen                              
+void print(vector<L1GctEmCand> cands);
+
+vector<L1CaloEmCand> data;
+vector<L1GctEmCand> gctData;
+vector<L1CaloEmCand> fileIso;
+vector<L1CaloEmCand> fileNoniso;
+ifstream file;
+
+
 int main()
 {
-  cout << endl;
-  cout << "*********************************" << endl;
-  cout << "  GCT electron processing tester " << endl;
-  cout << "*********************************" << endl;
+  cout <<"\n=============================="<<endl;
+  cout <<" Test full chain of electrons "<<endl;
+  cout <<"=============================="<<endl;
 
+  vector<L1GctEmCand> isoElectrons;
+  vector<L1GctEmCand> nonIsoElec;
+  vector<L1GctEmLeafCard*> emLeafs;
+  bool isos = false;
+  bool nonisos = false;
+  bool leafs = false;
 
   try { 
-  L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(0);
-  
-  //gct->print();
-  //Firstly, check that there's nothing in the buffers of the GCT
-  vector<L1GctEmCand> electrons = gct->getIsoElectrons();
-  vector<L1GctEmCand> nonIso = gct->getNonIsoElectrons();
-  cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
-  cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
-  for(unsigned int i=0;i!=electrons.size();i++){
-    cout<<"          "<<electrons[i].rank()<<"      "<<electrons[i].etaIndex()<<"     "<<electrons[i].phiIndex()<<
-    "         "<<nonIso[i].rank()<<"      "<<nonIso[i].etaIndex()<<"     "<<nonIso[i].phiIndex()<<endl;
-  }
+    L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger();
+    L1GctElectronSorter* isoSort = new L1GctElectronSorter(72,0);
+    L1GctElectronSorter* nonIsoSort = new L1GctElectronSorter(72,1);
 
-  //Open source card files and look at the electrons in there
-  cout<<"testelectrons open file?"<<endl;
-  std::string fileName = "testElectronsRct_";
-  gct->openSourceCardFiles(fileName);
-  cout<<"about to process..."<<endl;
-  gct->process();
-  //gct->print();
-  vector<L1GctEmCand> newIso = gct->getIsoElectrons();
-  vector<L1GctEmCand> newnonIso = gct->getNonIsoElectrons();
-  cout<<"From GCT: iso electrons     &    non-iso electrons:"<<endl;
-  cout<<"          Rank   Eta   Phi       Rank   Eta   Phi" <<endl;
-  for(unsigned int i=0;i!=newIso.size();i++){
-    cout<<"          "<<newIso[i].rank()<<"      "<<newIso[i].etaIndex()<<"     "<<newIso[i].phiIndex()<<
-      "         "<<newnonIso[i].rank()<<"      "<<newnonIso[i].etaIndex()<<"     "<<newnonIso[i].phiIndex()<<endl;
-  }
-  cout<<"END OF TEST PROGRAM"<<endl;
+    isoElectrons = gct->getIsoElectrons();
+    nonIsoElec = gct->getNonIsoElectrons();
+    emLeafs = gct->getEmLeafCards();
+
+    // Check that internal vectors in GCT is correctly sat up for electrns
+    if(isoElectrons.size()!= 4){
+      throw cms::Exception("ErrorSizeOfIso")
+	<< "The GCT class returns the wrong number of iso electrons"<<endl;
+      isos = true;
+    }
+    if(nonIsoElec.size()!= 4){
+      throw cms::Exception("ErrorSizeOfNonIso")
+	<< "The GCT class returns the wrong number of non-iso electrons"<<endl;
+      nonisos = true;
+    }
+    if(emLeafs.size()!= 2){
+      throw cms::Exception("ErrorSizeOfEmLeaf")
+	<< "The GCT class holds the wrong number of leaf cards"<<endl;
+      leafs = true;
+    }
+  
+    //Open source card files and run through the gct chain, returning the four electrons highest in rank
+    std::string fileName = "data/testElectronsRct_";
+    std::stringstream ss;
+    std::string fileNo;
+
+    gct->openSourceCardFiles(fileName);
+    //gct->print();
+    gct->process();
+    gct->print();
+    vector<L1GctEmCand> newIso = gct->getIsoElectrons();
+    vector<L1GctEmCand> newnonIso = gct->getNonIsoElectrons();
+    
+    cout<<"=========== From the GCT chain ==============="<<endl;
+    cout<<"Iso electrons are: "<<endl;
+    print(newIso);
+    cout<<"Non-iso electrons are: "<<endl;
+    print(newnonIso);
+
+    //Open the same files using the function LoadFile and sort them and see if same output it returned
+    for(int i=0;i<18;i++){
+      ss << i;
+      ss >> fileNo;
+      LoadFileData(fileName+fileNo);
+      for(int unsigned n=0;n!=data.size();n++){
+	if(n<4){
+	  fileIso.push_back(data[n]);
+	}else{
+	  fileNoniso.push_back(data[n]);
+	}
+      }
+
+
+    }
+    for(unsigned int i=0;i!=fileIso.size();i++){
+      isoSort->setInputEmCand(i,fileIso[i]);
+      nonIsoSort->setInputEmCand(i,fileNoniso[i]);
+    }
+    isoSort->process();
+    nonIsoSort->process();
+    vector<L1GctEmCand> iso = isoSort->getOutputCands();
+    vector<L1GctEmCand> noniso = nonIsoSort->getOutputCands();
+    cout<<"=================From files externally sorted============="<<endl;
+    cout<<"Iso electrons are:"<<endl;
+    print(iso);
+    cout<<"Non-iso electrons are:"<<endl;
+    print(noniso);
+    delete isoSort;
+    delete nonIsoSort;
+    delete gct;
+
   }
   catch(std::exception e){
     cerr << e.what() << endl;
   }
+  return 0;
 }
+
+// Function definition of function that reads in dummy data and load it into inputCands vector        
+void LoadFileData(const string &inputFile)
+{
+  //Opens the file                                                                                     
+  file.open(inputFile.c_str(), ios::in);
+
+  if(!file){
+    throw cms::Exception("ErrorOpenFile")
+      << "Cannot open input data file" << endl;
+  }
+
+  unsigned candRank = 0, candRegion = 0, candCard = 0, candCrate = 0;
+  short dummy;
+  string bxNo = "poels";
+  bool candIso=0;
+
+  //Reads in first crossing, then crossing no                                           
+  //then 8 electrons, 4 first is iso, next non iso.                                                    
+  //The 3x14 jet stuff and 8 mip and quiet bits are skipped over.                                     
+   
+    file>> bxNo;
+    file >>std::dec>> dummy;
+    for(int i=0; i<58; i++){ //Loops over one bunch-crossing                                          
+      if(i<8){
+        if(i>3){
+          file >>std::hex>> dummy;
+          candRank = dummy & 0x3f;
+          candRegion = (dummy>>6) & 0x1;
+          candCard = (dummy>>7) & 0x7;
+          candIso = 1;
+          L1CaloEmCand electrons(candRank, candRegion, candCard, candCrate, candIso);
+          data.push_back(electrons);
+	}else{
+          if(i<4){
+            file >>std::hex>> dummy;
+            candRank = dummy & 0x3f;
+            candRegion = (dummy>>6) & 0x1;
+            candCard = (dummy>>7) & 0x7;
+            candIso = 0;
+            L1CaloEmCand electrons(candRank, candRegion, candCard, candCrate, candIso);
+            data.push_back(electrons);
+          }else{
+	    file>>dummy;
+          }
+        }
+      }else{
+        file >>std::hex>> dummy;
+      }
+    }
+  file.close();
+  return;
+}
+
+void print(vector<L1GctEmCand> cands){
+  for(unsigned int i=0; i!=cands.size(); i++){
+    cout<<"          Rank: "<<cands[i].rank()<<"  Eta: "<<cands[i].etaIndex()<<"  Phi: "<<cands[i].phiIndex()<<endl;
+  }
+  return;
+}
+
 
