@@ -77,14 +77,15 @@ int main()
     }
   
     //Open source card files and run through the gct chain, returning the four electrons highest in rank
-    std::string fileName = "data/testElectronsRct_";
-    std::stringstream ss;
-    std::string fileNo;
+    // testElectronsRct_x are random test files with rct data
+    //testElectrons_x are testfiles containing 1,2,3 electrons, equal rank,phi and energies etc.
+    // testEmCandsDummy_ are empty test files 
+
+    //    std::string fileName = "data/testElectronsRct_";
+    std::string fileName = "data/testEmDummy_";
 
     gct->openSourceCardFiles(fileName);
-    //gct->print();
     gct->process();
-    gct->print();
     vector<L1GctEmCand> newIso = gct->getIsoElectrons();
     vector<L1GctEmCand> newnonIso = gct->getNonIsoElectrons();
     
@@ -96,20 +97,24 @@ int main()
 
     //Open the same files using the function LoadFile and sort them and see if same output it returned
     for(int i=0;i<18;i++){
+      stringstream ss;
+      string fileNo;
       ss << i;
       ss >> fileNo;
       LoadFileData(fileName+fileNo);
-      for(int unsigned n=0;n!=data.size();n++){
-	if(n<4){
-	  fileIso.push_back(data[n]);
-	}else{
-	  fileNoniso.push_back(data[n]);
-	}
-      }
-
-
     }
-    for(unsigned int i=0;i!=fileIso.size();i++){
+    for(int unsigned n=0;n!=18;n++){
+      fileIso.push_back(data[n*8]);
+      fileIso.push_back(data[n*8 + 1]);
+      fileIso.push_back(data[n*8 + 2]);
+      fileIso.push_back(data[n*8 + 3]);
+      fileNoniso.push_back(data[n*8 + 4]);
+      fileNoniso.push_back(data[n*8 + 5]);
+      fileNoniso.push_back(data[n*8 + 6]);
+      fileNoniso.push_back(data[n*8 + 7]);
+    }
+ 
+    for(unsigned int i=0;i!=72;i++){
       isoSort->setInputEmCand(i,fileIso[i]);
       nonIsoSort->setInputEmCand(i,fileNoniso[i]);
     }
@@ -122,6 +127,14 @@ int main()
     print(iso);
     cout<<"Non-iso electrons are:"<<endl;
     print(noniso);
+   
+    if(!isos && !nonisos && !leafs){
+      cout<<"======================================="<<endl;
+      cout<<" Test full chain of electrons ran"<<endl;
+      cout<<" without errors"<<endl;
+      cout<<"========================================"<<endl;
+    }
+
     delete isoSort;
     delete nonIsoSort;
     delete gct;
