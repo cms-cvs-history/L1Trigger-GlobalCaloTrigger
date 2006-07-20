@@ -368,7 +368,7 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
   int eyTotal = eyMinusVl + eyPlusVal;
   unsigned etTotal = etMinusVl + etPlusVal;
 
-  etmiss_vec etResult = trueMissingEt(exTotal, eyTotal);
+  etmiss_vec etResult = trueMissingEt(-exTotal, -eyTotal);
 
   bool exTotalOvrFlow = (exTotal<-2048) || (exTotal>=2048) || exMinusOvrFlow || exPlusOverFlow;
   bool eyTotalOvrFlow = (eyTotal<-2048) || (eyTotal>=2048) || eyMinusOvrFlow || eyPlusOverFlow;
