@@ -1,0 +1,4 @@
+module gct = L1GctEmulator { 
+  // path to jet LUT ASCII file
+  FileInPath jetEtLutFile = "L1Trigger/GlobalCaloTrigger/test/data/defaultJetEtCalibrationLut.dat"
+}
