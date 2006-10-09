@@ -640,7 +640,7 @@ bool checkHt(L1GctJetLeafCard* jlc, JetsVector &jetList, unsigned &leafHt) {
 unsigned jetHtSum(L1GctJetFinderBase* jf, int jn) {
 
   //
-  return static_cast<unsigned>(jf->getJets().at(jn).rankForHt());
+  return static_cast<unsigned>(jf->getJets().at(jn).calibratedEt());
   //
 
   //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
