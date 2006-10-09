@@ -1,0 +1,74 @@
+process calTrig  = {
+
+   # Read the digitised events from a root file
+   #
+    source = PoolSource {
+#	untracked vstring fileNames = {'/store/unmerged/RelVal/2006/9/24/RelVal101SingleEPt35/GEN-SIM-DIGI-RECO/0005/36680E3F-094C-DB11-976E-000E0C4DE5B3.root'}
+ 	untracked vstring fileNames = {'file:evtgen_detsim_digi.root'}
+	untracked int32  maxEvents  = 20
+    }
+
+   service = RandomNumberGeneratorService
+   {
+      untracked uint32 sourceSeed = 135799753
+      PSet moduleSeeds =
+      {
+         untracked uint32 VtxSmeared = 123456789
+      }
+   }
+
+   include "Geometry/CMSCommonData/data/cmsSimIdealGeometryXML.cfi"
+
+   #es_module = EcalPreshowerGeometryEP {}
+   #es_module = EcalBarrelGeometryEP {}
+   #es_module = EcalEndcapGeometryEP {}
+   #es_module = HcalHardcodeGeometryEP {}
+   #es_module = CaloTowerHardcodeGeometryEP {}
+   #es_module = CaloGeometryBuilder {}
+   #
+   # This include does the same as the es_modules above
+   include "Geometry/CaloEventSetup/data/CaloGeometry.cfi"
+   # This one as well, for the trigger primitives
+   include "Geometry/CaloEventSetup/data/EcalTrigTowerConstituents.cfi"
+   
+   #calibrations
+   include "CalibCalorimetry/EcalTrivialCondModules/data/EcalTrivialCondRetriever.cfi"
+   include "CalibCalorimetry/HcalPlugins/data/hardwired_conditions.cfi"
+
+   # trigger primitives
+   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
+   #include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
+
+   module hcalTriggerPrimitiveDigis = HcalTrigPrimDigiProducer {
+     int32 egammaScaleMeV = 500
+     int32 jetScaleMeV = 1000
+     InputTag inputLabel = hcalDigis
+   }
+ 
+   module rct = L1RCTProducer {
+           string src = "/afs/hep.wisc.edu/user/leonard/L1RCT/data/rct-input-1.dat"
+           untracked bool orcaFileInput = false
+   }
+
+   module gct = L1GctEmulator { 
+          untracked bool verbose = true
+          FileInPath jetEtLutFile = "L1Trigger/GlobalCaloTrigger/test/data/defaultJetEtCalibrationLut.dat"
+   }
+
+   sequence calTrig = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, rct, gct}
+
+   path p1 = { calTrig }
+
+   module outputEvents = PoolOutputModule
+   {
+	untracked vstring outputCommands = 
+	{
+	    "keep *",
+	    "drop *_hcalTriggerPrimitiveDigis_*_*"
+	}
+      untracked string fileName = "l1CaloExample.root"
+   }
+   endpath outpath = { outputEvents }
+
+}
+
