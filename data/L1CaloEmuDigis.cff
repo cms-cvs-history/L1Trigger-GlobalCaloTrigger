@@ -1,31 +1,14 @@
-process L1CaloEmuDigis  = {
 
-   # Read the digitised events from a root file
-   #
-    source = PoolSource {
-#	untracked vstring fileNames = {'/store/unmerged/RelVal/2006/9/24/RelVal101SingleEPt35/GEN-SIM-DIGI-RECO/0005/36680E3F-094C-DB11-976E-000E0C4DE5B3.root'}
- 	untracked vstring fileNames = {'file:evtgen_detsim_digi.root'}
-	untracked int32  maxEvents  = 20
-    }
-
-   service = RandomNumberGeneratorService
-   {
-      untracked uint32 sourceSeed = 135799753
-      PSet moduleSeeds =
-      {
-         untracked uint32 VtxSmeared = 123456789
-      }
-   }
-
+   # Geometry
    include "Geometry/CMSCommonData/data/cmsSimIdealGeometryXML.cfi"
    include "Geometry/CaloEventSetup/data/CaloGeometry.cfi"
    include "Geometry/CaloEventSetup/data/EcalTrigTowerConstituents.cfi"
    
-   #calibrations
+   # Calibrations
    include "CalibCalorimetry/EcalTrivialCondModules/data/EcalTrivialCondRetriever.cfi"
    include "CalibCalorimetry/HcalPlugins/data/hardwired_conditions.cfi"
 
-   # trigger primitives
+   # Trigger primitives
    include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
    #include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
 
@@ -35,31 +18,12 @@ process L1CaloEmuDigis  = {
      InputTag inputLabel = hcalDigis
    }
  
-   module rctemu = L1RCTProducer {
+   module L1RctEmuDigis = L1RCTProducer {
            string src = "/afs/hep.wisc.edu/user/leonard/L1RCT/data/rct-input-1.dat"
            untracked bool orcaFileInput = false
    }
 
-   module gct = L1GctEmulator { 
-     InputTag inputLabel = rctemu
-     untracked bool verbose = false
-     FileInPath jetEtLutFile = "L1Trigger/GlobalCaloTrigger/test/data/defaultJetEtCalibrationLut.dat"
-   }
+   include "L1Trigger/GlobalCaloTrigger/data/L1GctEmuDigis.cfi"
 
-   sequence calTrig = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, rctemu, gctemu}
-
-   path p1 = { calTrig }
-
-   module outputEvents = PoolOutputModule
-   {
-	untracked vstring outputCommands = 
-	{
-	    "keep *",
-	    "drop *_hcalTriggerPrimitiveDigis_*_*"
-	}
-      untracked string fileName = "l1CaloExample.root"
-   }
-   endpath outpath = { outputEvents }
-
-}
+   sequence L1CaloEmuDigis = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, L1RctEmuDigis, L1GctEmuDigis }
 
