@@ -1,4 +1,4 @@
-process calTrig  = {
+process L1CaloEmuDigis  = {
 
    # Read the digitised events from a root file
    #
@@ -18,17 +18,7 @@ process calTrig  = {
    }
 
    include "Geometry/CMSCommonData/data/cmsSimIdealGeometryXML.cfi"
-
-   #es_module = EcalPreshowerGeometryEP {}
-   #es_module = EcalBarrelGeometryEP {}
-   #es_module = EcalEndcapGeometryEP {}
-   #es_module = HcalHardcodeGeometryEP {}
-   #es_module = CaloTowerHardcodeGeometryEP {}
-   #es_module = CaloGeometryBuilder {}
-   #
-   # This include does the same as the es_modules above
    include "Geometry/CaloEventSetup/data/CaloGeometry.cfi"
-   # This one as well, for the trigger primitives
    include "Geometry/CaloEventSetup/data/EcalTrigTowerConstituents.cfi"
    
    #calibrations
@@ -45,17 +35,18 @@ process calTrig  = {
      InputTag inputLabel = hcalDigis
    }
  
-   module rct = L1RCTProducer {
+   module rctemu = L1RCTProducer {
            string src = "/afs/hep.wisc.edu/user/leonard/L1RCT/data/rct-input-1.dat"
            untracked bool orcaFileInput = false
    }
 
    module gct = L1GctEmulator { 
-          untracked bool verbose = true
-          FileInPath jetEtLutFile = "L1Trigger/GlobalCaloTrigger/test/data/defaultJetEtCalibrationLut.dat"
+     InputTag inputLabel = rctemu
+     untracked bool verbose = false
+     FileInPath jetEtLutFile = "L1Trigger/GlobalCaloTrigger/test/data/defaultJetEtCalibrationLut.dat"
    }
 
-   sequence calTrig = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, rct, gct}
+   sequence calTrig = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, rctemu, gctemu}
 
    path p1 = { calTrig }
 
