@@ -8,14 +8,23 @@
    include "CalibCalorimetry/EcalTrivialCondModules/data/EcalTrivialCondRetriever.cfi"
    include "CalibCalorimetry/HcalPlugins/data/hardwired_conditions.cfi"
 
+   # Trigger configuration
+   include "L1Trigger/L1ScalesProducers/data/L1Scales.cfi"
+   include "L1Trigger/L1ScalesProducers/data/L1ScalesRecords.cff"
+
    # Trigger primitives
    include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
-   #include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
+#   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
 
    module hcalTriggerPrimitiveDigis = HcalTrigPrimDigiProducer {
-     int32 egammaScaleMeV = 500
-     int32 jetScaleMeV = 1000
-     InputTag inputLabel = hcalDigis
+  int32 latency = 1
+  vdouble weights = { -1, -1, 1, 1}
+  bool peakFilter = false
+// Input digi label (_must_ be without zero-suppression!)
+  InputTag inputLabel = hcalDigis
+#     int32 egammaScaleMeV = 500
+#     int32 jetScaleMeV = 1000
+#     InputTag inputLabel = hcalDigis
    }
  
    module L1RctEmuDigis = L1RCTProducer {
