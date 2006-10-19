@@ -23,5 +23,5 @@
    # GCT
    include "L1Trigger/GlobalCaloTrigger/data/L1GctEmuDigis.cfi"
 
-   sequence L1CaloEmuDigis = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, rct, L1GctEmuDigis }
+   sequence L1CaloEmuDigis = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, L1RctEmuDigis, L1GctEmuDigis }
 
