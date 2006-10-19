@@ -18,7 +18,7 @@
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
 
    # RCT
-   include "L1Trigger/RegionalCaloTrigger/data/RegionalCaloTrigger.cfi"
+   include "L1Trigger/RegionalCaloTrigger/data/L1RctEmuDigis.cfi"
  
    # GCT
    include "L1Trigger/GlobalCaloTrigger/data/L1GctEmuDigis.cfi"
