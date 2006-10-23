@@ -1,0 +1,13 @@
+module l1extraCaloParticles = L1ExtraParticlesProd {
+	bool produceMuonParticles = false
+	InputTag muonSource = gmt
+	bool produceCaloParticles = true
+	InputTag isolatedEmSource = L1GctEmuDigis:isoEm
+	InputTag nonIsolatedEmSource = L1GctEmuDigis:nonIsoEm
+	InputTag forwardJetSource = L1GctEmuDigis:forJets
+	InputTag centralJetSource = L1GctEmuDigis:cenJets
+	InputTag tauJetSource = L1GctEmuDigis:tauJets
+	InputTag etTotalSource = L1GctEmuDigis
+	InputTag etHadSource = L1GctEmuDigis
+	InputTag etMissSource = L1GctEmuDigis
+}
