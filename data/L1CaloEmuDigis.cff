@@ -13,6 +13,15 @@
    include "L1Trigger/L1ScalesProducers/data/L1Scales.cfi"
    include "L1Trigger/L1ScalesProducers/data/L1ScalesRecords.cff"
 
+#   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"		
+
+#   es_source = HcalTPGCoderULUT {
+#        FileInPath filename='CalibCalorimetry/HcalTPGAlgos/data/inputLUTcoder.dat'
+#   }
+#   es_source = CaloTPGTranscoderULUTs {
+#        FileInPath hcalLUT='CalibCalorimetry/CaloTPG/data/outputLUTtranscoder.dat'
+#   }
+
    # Trigger primitives
    include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
