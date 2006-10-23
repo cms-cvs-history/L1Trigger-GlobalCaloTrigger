@@ -1,4 +1,4 @@
-module l1extraCaloParticles = L1ExtraParticlesProd {
+module L1ExtraCaloParticles = L1ExtraParticlesProd {
 	bool produceMuonParticles = false
 	InputTag muonSource = gmt
 	bool produceCaloParticles = true
