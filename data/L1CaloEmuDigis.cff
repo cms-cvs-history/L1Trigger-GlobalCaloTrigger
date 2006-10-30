@@ -1,7 +1,33 @@
 
    # ECAL TPG
-   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cff"
-   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
+#   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cff"
+#   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
+
+# Magnetic field full setup
+   include "MagneticField/Engine/data/volumeBasedMagneticField.cfi"
+
+# Calo geometry service model
+   include "Geometry/CaloEventSetup/data/CaloGeometry.cfi"
+
+# Calo geometry service model
+   include "Geometry/CaloEventSetup/data/EcalTrigTowerConstituents.cfi"
+
+# IdealGeometryRecord
+   include "Geometry/CMSCommonData/data/cmsIdealGeometryXML.cfi"
+
+# Ecal conditions, not yet used
+   include "CalibCalorimetry/EcalTrivialCondModules/data/EcalTrivialCondRetriever.cfi"
+
+	module ecalTriggerPrimitiveDigis = EcalTrigPrimProducer {
+                  untracked bool Validation=false 
+#                  string Label = "ecalUnsuppressedDigis"
+                  string Label = "ecalDigis"
+                  string InstanceEB = "ebDigis"
+                  string InstanceEE = "eeDigis"
+	          int32 FgvbMinEnergy = 50   #temporary adc-value for Endcap
+	          double TTFLowEnergy =2.5   #GeV
+	          double TTFHighEnergy=5.
+        } 
 
    # HCAL TPG
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
