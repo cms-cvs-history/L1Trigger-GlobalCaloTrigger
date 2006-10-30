@@ -1,30 +1,15 @@
 
-   # Geometry
-   include "Geometry/CMSCommonData/data/cmsSimIdealGeometryXML.cfi"
-   include "Geometry/CaloEventSetup/data/CaloGeometry.cfi"
-   include "Geometry/CaloEventSetup/data/EcalTrigTowerConstituents.cfi"
-   
-   # Calibrations
-   include "CalibCalorimetry/EcalTrivialCondModules/data/EcalTrivialCondRetriever.cfi"
-   include "CalibCalorimetry/HcalPlugins/data/hardwired_conditions.cfi"
+   # ECAL TPG
+   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cff"
+   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
+
+   # HCAL TPG
+   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
+   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
 
    # Trigger configuration
-   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
    include "L1Trigger/L1ScalesProducers/data/L1Scales.cfi"
    include "L1Trigger/L1ScalesProducers/data/L1ScalesRecords.cff"
-
-#   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"		
-
-#   es_source = HcalTPGCoderULUT {
-#        FileInPath filename='CalibCalorimetry/HcalTPGAlgos/data/inputLUTcoder.dat'
-#   }
-#   es_source = CaloTPGTranscoderULUTs {
-#        FileInPath hcalLUT='CalibCalorimetry/CaloTPG/data/outputLUTtranscoder.dat'
-#   }
-
-   # Trigger primitives
-   include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cfi"
-   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
 
    # RCT
    include "L1Trigger/RegionalCaloTrigger/data/L1RCTRegionSumsEmCands.cfi"
