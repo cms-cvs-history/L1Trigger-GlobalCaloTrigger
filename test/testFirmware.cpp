@@ -15,6 +15,7 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelJetFpga.h"
 
 //Standard library headers
+#include <math.h>
 #include <fstream>   //for file IO
 #include <string>
 #include <vector>
@@ -750,7 +751,7 @@ bool checkJetCounts(const L1GlobalCaloTrigger* gct,
 unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const unsigned Wheel)
 {
   unsigned count = 0;
-  L1GctJcWheelType dummy;
+  L1GctJetCount<3> dummy;
   const unsigned MAX_VALUE = (1<<(dummy.size()))-1;
 
   for (unsigned i=0; i<jetList.size(); i++) {

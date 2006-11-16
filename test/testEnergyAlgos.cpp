@@ -30,6 +30,7 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelJetFpga.h"
 
 //Standard library headers
+#include <math.h>
 #include <fstream>   //for file IO
 #include <string>
 #include <vector>
@@ -326,7 +327,7 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
     L1GctJetLeafCard* jlc = gct->getJetLeafCards().at(rctStrip/6);
     L1GctJetFinderBase* jf = ((rctStrip%6)/2==0) ? jlc->getJetFinderA() :
       ( ((rctStrip%6)/2==1) ? jlc->getJetFinderB() : jlc->getJetFinderC() );
-    L1GctScalarEtVal gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
+    L1GctUnsignedInt<12> gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
 
     int ex = etComponent(et, ((2*strip+9)%36) );
     int ey = etComponent(et, (( 2*strip )%36) );
@@ -351,7 +352,7 @@ bool checkEnergySums(const L1GlobalCaloTrigger* gct,
     L1GctJetLeafCard* jlc = gct->getJetLeafCards().at(rctStrip/6);
     L1GctJetFinderBase* jf = ((rctStrip%6)/2==0) ? jlc->getJetFinderA() :
       ( ((rctStrip%6)/2==1) ? jlc->getJetFinderB() : jlc->getJetFinderC() );
-    L1GctScalarEtVal gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
+    L1GctUnsignedInt<12> gctEt = ((rctStrip%2==0) ? jf->getEtStrip0() : jf->getEtStrip1() );
 
     int ex = etComponent(et, ((2*strip+9)%36) );
     int ey = etComponent(et, (( 2*strip )%36) );
@@ -692,7 +693,7 @@ bool checkJetCounts(const L1GlobalCaloTrigger* gct,
 unsigned countJetsInCut(const JetsVector &jetList, const unsigned jcnum, const unsigned Wheel)
 {
   unsigned count = 0;
-  L1GctJcWheelType dummy;
+  L1GctJetCount<3> dummy;
   const unsigned MAX_VALUE = (1<<(dummy.size()))-1;
 
   for (unsigned i=0; i<jetList.size(); i++) {
