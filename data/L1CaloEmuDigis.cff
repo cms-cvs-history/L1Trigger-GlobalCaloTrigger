@@ -6,8 +6,8 @@
    include "SimCalorimetry/EcalSimProducers/data/ecaldigi.cfi"
 
    replace ecalTriggerPrimitiveDigis.Label = "ecalUnsuppressedDigis"
-#   replace ecalTriggerPrimitiveDigis.InstanceEB = "ebDigis"
-#   replace ecalTriggerPrimitiveDigis.InstanceEE = "eeDigis"
+   replace ecalTriggerPrimitiveDigis.InstanceEB = ""
+   replace ecalTriggerPrimitiveDigis.InstanceEE = ""
 
    # HCAL TPG
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
