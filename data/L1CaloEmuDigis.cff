@@ -5,10 +5,6 @@
    # get correct inputs for ECAL TPGs
    include "SimCalorimetry/EcalSimProducers/data/ecaldigi.cfi"
 
-   replace ecalTriggerPrimitiveDigis.Label = "ecalUnsuppressedDigis"
-   replace ecalTriggerPrimitiveDigis.InstanceEB = ""
-   replace ecalTriggerPrimitiveDigis.InstanceEE = ""
-
    # HCAL TPG
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
@@ -23,5 +19,5 @@
    # GCT
    include "L1Trigger/GlobalCaloTrigger/data/L1GctEmuDigis.cfi"
 
-   sequence L1CaloEmuDigis = { ecalUnsuppressedDigis, ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, L1RCTRegionSumsEmCands, L1GctEmuDigis }
+   sequence L1CaloEmuDigis = { ecalTriggerPrimitiveDigis, hcalTriggerPrimitiveDigis, L1RCTRegionSumsEmCands, L1GctEmuDigis }
 
