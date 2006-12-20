@@ -2,8 +2,8 @@
    # ECAL TPG
    include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cff"
 
-   # get correct inputs for ECAL TPGs
-   include "SimCalorimetry/EcalSimProducers/data/ecaldigi.cfi"
+   # get correct inputs for ECAL TPGs5A
+#   include "SimCalorimetry/EcalSimProducers/data/ecaldigi.cfi"
 
    # HCAL TPG
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
