@@ -1,13 +1,12 @@
 
    # ECAL TPG
    include "SimCalorimetry/EcalTrigPrimProducers/data/ecalTriggerPrimitiveDigis.cff"
-
-   # get correct inputs for ECAL TPGs5A
-#   include "SimCalorimetry/EcalSimProducers/data/ecaldigi.cfi"
+   include "CalibCalorimetry/Configuration/data/Ecal_FakeConditions.cff"
 
    # HCAL TPG
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
    include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
+   include "CalibCalorimetry/Configuration/data/Hcal_FakeConditions.cff"
 
    # Trigger configuration
    include "L1Trigger/L1ScalesProducers/data/L1Scales.cfi"
