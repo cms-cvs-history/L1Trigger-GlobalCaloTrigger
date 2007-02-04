@@ -334,7 +334,9 @@ vector<JetsVector> getJetsFromFile(ifstream &fin)
       temp.push_back(nextJetFromFile(jf, fin));
     }
     // Sort the jets coming from the hardware to match the order from the jetFinderBase
-    sort(temp.begin(), temp.end(), L1GctJet::rankGreaterThan());
+	// *** The sort is currently commented. Note that it won't work unless the ***
+	// *** same et->rank lookup table is used in the test and in the emulator  ***
+    // sort(temp.begin(), temp.end(), L1GctJet::rankGreaterThan());
     result.push_back(temp);
   }
   return result;
@@ -356,8 +358,11 @@ L1GctJet nextJetFromFile (const unsigned jf, ifstream &fin)
   const unsigned NE = L1CaloRegionDetId::N_ETA/2;
   const unsigned NP = L1CaloRegionDetId::N_PHI/2;
   // Convert local jetfinder to global coordinates
-  unsigned globalEta = (eta==NE) ? 0 : ((jf<NP) ? (NE-eta-1) : (NE+eta));
-  unsigned globalPhi = (eta==NE) ? 0 : (2*((2*(NP+1)-jf)%NP)+(1-phi));
+  // Note about phi - the jetfinders are mapped onto
+  // the RCT crates with jf #0 covering 50-90 degrees
+  // and jf #8 covering 90-130 degrees
+  unsigned globalEta = (eta==NE+1) ? 0 : ((jf<NP) ? (NE-eta) : (NE+eta-1));
+  unsigned globalPhi = (eta==NE+1) ? 0 : ((2*(NP+1-(jf%NP))+3*phi)%(2*NP));
 
   if (of) { et |= (1<<L1GctJet::RAWSUM_BITWIDTH); }
 
