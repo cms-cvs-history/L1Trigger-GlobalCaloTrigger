@@ -4,8 +4,8 @@
    include "CalibCalorimetry/Configuration/data/Ecal_FakeConditions.cff"
 
    # HCAL TPG
-   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cff"
-   include "SimCalorimetry/HcalSimProducers/data/hcaltpdigi.cfi"
+   include "SimCalorimetry/HcalTrigPrimProducers/data/hcaltpdigi.cff"
+   include "SimCalorimetry/HcalTrigPrimProducers/data/hcaltpdigi.cfi"
    include "CalibCalorimetry/Configuration/data/Hcal_FakeConditions.cff"
 
    # Trigger configuration
