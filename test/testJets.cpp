@@ -10,6 +10,8 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GlobalCaloTrigger.h" 
 #include "FWCore/Utilities/interface/Exception.h"
 
+#include "L1Trigger/L1Scales/interface/L1CaloEtScale.h"
+
 #include <iostream>
 #include <exception>
 #include <vector>
@@ -21,6 +23,14 @@ int main()
   try {
     // New GCT
     L1GlobalCaloTrigger* gct = new L1GlobalCaloTrigger(true); 
+    double lsb=1.0;
+    static const unsigned nThresh=64;
+    vector<double> thresh(nThresh);
+    for (unsigned t=0; t<nThresh; ++t) {
+      thresh.at(t) = t*4.0 + 2.0;
+    }
+    L1CaloEtScale* myScale = new L1CaloEtScale(lsb, thresh);
+    gct->getJetEtCalibLut()->setOutputEtScale(myScale);
  
     // Open source card input files
     cout << "Opening input source card files" << endl;
@@ -35,13 +45,13 @@ int main()
     gct->process(); // process
 
     // central jet outputs to GT
-    vector<L1GctJet> centralJets = gct->getCentralJets();
+    vector<L1GctJetCand> centralJets = gct->getCentralJets();
   
     // forward jet outputs to GT
-    vector<L1GctJet> forwardJets = gct->getForwardJets();
+    vector<L1GctJetCand> forwardJets = gct->getForwardJets();
   
     // tau jet outputs to GT
-    vector<L1GctJet> tauJets = gct->getTauJets();
+    vector<L1GctJetCand> tauJets = gct->getTauJets();
 
     // Now take a look at the output jets
 

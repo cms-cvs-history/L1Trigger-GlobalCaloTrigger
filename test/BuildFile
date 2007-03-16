@@ -1,17 +1,15 @@
 
 <use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
+<flags SEAL_PLUGIN_NAME="L1GctTest">
+
+<library name=L1GctTest file=*.cc>
+</library>
 
 <bin name=printMap file=printMap.cpp>
 </bin>
 
 <bin name=testGctMap file=testGctMap.cpp>
-</bin>
-
-<bin name=testJets file=testJets.cpp>
-</bin>
-
-<bin name=testElectrons file=testElectrons.cpp>
 </bin>
 
 <bin name=testEtTypes file=testEtTypes.cpp>
@@ -23,12 +21,6 @@
 <bin name=testElectronSorter file=testElectronSorter.cpp>
 </bin>
 
-<bin name=testEnergyAlgos file=testEnergyAlgos.cpp>
-</bin>
-
-<bin name=testFirmware file=testFirmware.cpp>
-</bin>
-
 <bin name=testJetFinalStage file=testJetFinalStage.cpp>
 </bin>
 
@@ -37,5 +29,6 @@
 
 <bin name=testJetEtCalibrationLut file=testJetEtCalibrationLut.cpp>
 </bin>
+
 
 
