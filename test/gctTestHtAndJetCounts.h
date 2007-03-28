@@ -1,11 +1,16 @@
 #ifndef GCTTESTHTANDJETCOUNTS_H_
 #define GCTTESTHTANDJETCOUNTS_H_
 
-//
-// Ht and jet count sum test functionality migrated from standalone test programs
-//
-// Greg Heath, March 2007
-//
+/*!
+ * \class gctTestHtAndJetCounts
+ * \brief Test of the Ht and jet counts
+ * 
+ * Ht and jet count sum test functionality migrated from standalone test programs
+ *
+ * \author Greg Heath
+ * \date March 2007
+ *
+ */
  
 #include "DataFormats/L1CaloTrigger/interface/L1CaloRegion.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctJetCand.h"
