@@ -71,29 +71,29 @@ int main(int argc, char **argv)
     //cout << mySourceCardT3 << endl;        
 
     //Read the same file simultaneously
-    mySourceCardT1->openInputFile(testDataFile);
-    mySourceCardT2->openInputFile(testDataFile);  
-    mySourceCardT3->openInputFile(testDataFile);        
+    //    mySourceCardT1->openInputFile(testDataFile);
+    //    mySourceCardT2->openInputFile(testDataFile);  
+    //    mySourceCardT3->openInputFile(testDataFile);        
     
-    while(mySourceCardT1->dataValid())
-    {        
-      mySourceCardT1->readBX(); //Get the data for each bunch crossing for each card type
-      mySourceCardT2->readBX();
-      mySourceCardT3->readBX();
+//     while(mySourceCardT1->dataValid())
+//     {        
+//       mySourceCardT1->readBX(); //Get the data for each bunch crossing for each card type
+//       mySourceCardT2->readBX();
+//       mySourceCardT3->readBX();
       
-      currentBX = mySourceCardT1->getBxNum();
+//       currentBX = mySourceCardT1->getBxNum();
       
-      //Read out the data
-      isoElectronsOut = mySourceCardT1->getIsoElectrons();
-      nonIsoElectronsOut = mySourceCardT1->getNonIsoElectrons();
-      mipBitsOut = mySourceCardT1->getMipBits();
-      quietBitsOut = mySourceCardT1->getQuietBits();
-      regionsOutT2 = mySourceCardT2->getRegions();
-      regionsOutT3 = mySourceCardT3->getRegions();           
+//       //Read out the data
+//       isoElectronsOut = mySourceCardT1->getIsoElectrons();
+//       nonIsoElectronsOut = mySourceCardT1->getNonIsoElectrons();
+//       mipBitsOut = mySourceCardT1->getMipBits();
+//       quietBitsOut = mySourceCardT1->getQuietBits();
+//       regionsOutT2 = mySourceCardT2->getRegions();
+//       regionsOutT3 = mySourceCardT3->getRegions();           
       
-      //output combined data to file
-      outputDataToFile(fout);
-    }
+//       //output combined data to file
+//       outputDataToFile(fout);
+//     }
     
     fout.close();
     
