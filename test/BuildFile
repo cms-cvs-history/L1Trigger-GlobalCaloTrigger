@@ -21,19 +21,19 @@
 <bin name=testEtTypes file=testEtTypes.cpp>
 </bin>
 
-<bin name=testJetFinder file=testJetFinder.cpp>
+<bin name=testJetFinder file=testJetFinder.cpp,produceTrivialCalibrationLut.cc>
 </bin>
 
 <bin name=testElectronSorter file=testElectronSorter.cpp>
 </bin>
 
-<bin name=testJetFinalStage file=testJetFinalStage.cpp>
+<bin name=testJetFinalStage file=testJetFinalStage.cpp,produceTrivialCalibrationLut.cc>
 </bin>
 
 <bin name=testSourceCard file=testSourceCard.cpp>
 </bin>
 
-<bin name=testJetEtCalibrationLut file=testJetEtCalibrationLut.cpp>
+<bin name=testJetEtCalibrationLut file=testJetEtCalibrationLut.cpp,produceTrivialCalibrationLut.cc>
 </bin>
 
 
