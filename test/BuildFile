@@ -6,7 +6,13 @@
 <library name=L1GctTest file=*.cc>
 </library>
 
+<bin name=checkLut file=checkLut.cpp,produceTrivialCalibrationLut.cc,L1GctLutFromFile.cc>
+</bin>
+
 <bin name=printMap file=printMap.cpp>
+</bin>
+
+<bin name=printLut file=printLut.cpp,produceTrivialCalibrationLut.cc>
 </bin>
 
 <bin name=testGctMap file=testGctMap.cpp>
