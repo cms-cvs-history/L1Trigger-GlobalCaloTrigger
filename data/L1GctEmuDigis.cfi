@@ -1,6 +1,5 @@
+include "L1TriggerConfig/GctConfigProducers/data/L1GctConfig.cfi"
+
 module L1GctEmuDigis = L1GctEmulator { 
   InputTag inputLabel = L1RCTRegionSumsEmCands
-  // path to jet LUT ASCII file
-  FileInPath jetEtLutFile = "L1Trigger/GlobalCaloTrigger/data/defaultJetEtCalibrationLut.dat"
-  bool useOrcaJetCalibration = false
 }
