@@ -100,11 +100,11 @@ uint16_t L1GctJetEtCalibrationLut::calibratedEt(uint16_t jetEt, unsigned eta) co
   }
   else {
     for (unsigned i=0; i<m_calibFunc.at(eta).size();i++){
-      corrEt += m_calibFunc.at(eta).at(i)*pow((double)jetEt,(int)i); 
+      corrEt += m_calibFunc.at(eta).at(i)*pow(jetEt*m_outputEtScale->linearLsb(),(int)i); 
     }
   }
 
-  uint16_t jetEtOut = (uint16_t)corrEt;
+  uint16_t jetEtOut = (uint16_t) ( corrEt/m_outputEtScale->linearLsb() );
 
   if(jetEtOut < (1 << JET_ENERGY_BITWIDTH)) {
     return jetEtOut;
