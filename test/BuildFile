@@ -1,7 +1,7 @@
 
 <use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
-<flags EDM_PLUGIN=1>
+<flags SEAL_PLUGIN_NAME="L1GctTest">
 
 <library name=L1GctTest file=*.cc>
 </library>
