@@ -56,7 +56,6 @@ L1GctJetEtCalibrationLut::L1GctJetEtCalibrationLut(string fileName, bool useOrca
 
 void L1GctJetEtCalibrationLut::setOutputEtScale(const L1CaloEtScale* scale) {
   m_outputEtScale = scale;
-  cout << m_outputEtScale;
 }
 
 ostream& operator << (ostream& os, const L1GctJetEtCalibrationLut& lut)
@@ -85,26 +84,26 @@ uint16_t L1GctJetEtCalibrationLut::calibratedEt(uint16_t jetEt, unsigned eta) co
 {
   double corrEt = 0;
 
-  if (eta>(NUMBER_ETA_VALUES-1)) eta=eta-NUMBER_ETA_VALUES; 
-
-  if(eta>(NUMBER_ETA_VALUES-1))
-    {
-      throw cms::Exception("L1GctJetEtCalibraionLut")
-        << "L1GctJetEtCalibrationLut::convertToTebBitRank(uint16_t jetEt, unsigned eta)"
-        << " eta value out of range eta=" <<  eta <<  "\n";
-    }
-
-  // switch between ORCA and current
+  // switch between ORCA and no calibration
   if (m_orcaCalib) {
     corrEt = orcaCalibFn(jetEt*m_outputEtScale->linearLsb(), eta);
   }
   else {
+    if (eta>(NUMBER_ETA_VALUES-1)) eta=eta-NUMBER_ETA_VALUES; 
+
+    if(eta>(NUMBER_ETA_VALUES-1))
+      {
+	throw cms::Exception("L1GctJetEtCalibraionLut")
+	  << "L1GctJetEtCalibrationLut::convertToTebBitRank(uint16_t jetEt, unsigned eta)"
+	  << " eta value out of range eta=" <<  eta <<  "\n";
+      }
+
     for (unsigned i=0; i<m_calibFunc.at(eta).size();i++){
-      corrEt += m_calibFunc.at(eta).at(i)*pow((double)jetEt,(int)i); 
+      corrEt += m_calibFunc.at(eta).at(i)*pow(jetEt*m_outputEtScale->linearLsb(),(int)i); 
     }
   }
 
-  uint16_t jetEtOut = (uint16_t)corrEt;
+  uint16_t jetEtOut = (uint16_t) ( corrEt/m_outputEtScale->linearLsb() );
 
   if(jetEtOut < (1 << JET_ENERGY_BITWIDTH)) {
     return jetEtOut;
