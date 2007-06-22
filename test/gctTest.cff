@@ -8,8 +8,7 @@ module gctemu = L1GctTest {
     untracked string referenceFile = ""
 } 
 
-include "L1TriggerConfig/L1ScalesProducers/data/L1Scales.cfi"
-include "L1TriggerConfig/L1ScalesProducers/data/L1ScalesRecords.cff"
+include "L1TriggerConfig/L1ScalesProducers/data/L1CaloScalesConfig.cff"
 
-include "L1TriggerConfig/GctConfigProducers/data/L1GctConfig.cfi"
+include "L1TriggerConfig/GctConfigProducers/data/L1GctConfig.cff"
 

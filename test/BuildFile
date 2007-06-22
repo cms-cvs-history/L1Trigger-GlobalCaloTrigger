@@ -30,9 +30,6 @@
 <bin name=testJetFinalStage file=testJetFinalStage.cpp,produceTrivialCalibrationLut.cc>
 </bin>
 
-<bin name=testSourceCard file=testSourceCard.cpp>
-</bin>
-
 <bin name=testJetEtCalibrationLut file=testJetEtCalibrationLut.cpp,produceTrivialCalibrationLut.cc>
 </bin>
 

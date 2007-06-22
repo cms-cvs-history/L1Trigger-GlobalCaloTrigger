@@ -5,6 +5,7 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelJetFpga.h"
 
 #include <math.h>
+#include <iostream>
 
 using namespace std;
 
