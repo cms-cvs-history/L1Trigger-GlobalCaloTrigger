@@ -1,0 +1,13 @@
+
+module gctTest = L1GctTestAnalyzer {
+  untracked InputTag rawInput = l1GctHwDigis
+  untracked InputTag emuInput = l1GctEmulDigis
+  untracked string outFile = "gctAnalyzer.txt"
+  untracked bool doHardware = true
+  untracked bool doEmulated = true
+  untracked bool doRctEm = true
+  untracked bool doInternEm = true
+  untracked bool doEm = true
+  untracked bool doJets = true
+  untracked uint32 rctEmMinRank = 0
+}
