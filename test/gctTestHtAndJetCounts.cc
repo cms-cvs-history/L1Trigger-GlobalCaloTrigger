@@ -114,7 +114,7 @@ bool gctTestHtAndJetCounts::checkJetCounts(const L1GlobalCaloTrigger* gct) const
 {
   bool testPass = true;
   L1GctGlobalEnergyAlgos* myGlobalEnergy = gct->getEnergyFinalStage();
-  L1GctJetEtCalibrationLut* myLut = gct->getJetEtCalibLut();
+  const L1GctJetEtCalibrationLut* myLut = gct->getJetEtCalibLut();
   //
   // Emulate the jet counting
   //--------------------------------------------------------------------------------------
