@@ -1,6 +1,8 @@
 
 <use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
+<use name=root>
+<use name=PhysicsTools/UtilAlgos>
 <flags EDM_PLUGIN=1>
 
 <library name=L1GctTest file=*.cc>
