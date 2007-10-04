@@ -11,7 +11,7 @@
 //
 // Original Author:  Gregory Heath
 //         Created:  Fri Jul 27 16:09:48 CEST 2007
-// $Id$
+// $Id: L1GctCompare.h,v 1.1 2007/08/30 14:35:58 heath Exp $
 //
 //
 
@@ -27,6 +27,8 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctCollections.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -47,6 +49,9 @@ class L1GctCompare : public edm::EDAnalyzer {
 
       // ----------member data ---------------------------
 
+      void analyzeJets(const edm::Handle<L1GctJetCandCollection>& j1,
+                       const edm::Handle<L1GctJetCandCollection>& j2);
+
       edm::InputTag m_cJets_tag1;
       edm::InputTag m_cJets_tag2;
       edm::InputTag m_tJets_tag1;
@@ -64,6 +69,12 @@ class L1GctCompare : public edm::EDAnalyzer {
       TH2F* theTauJetRankDifference;
       TH2F* theFwdJetRankComparison;
       TH2F* theFwdJetRankDifference;
+
+      TH2F* theEtaPhiMatchedJets;
+      TH1F* theJetRankGCT1Only;
+      TH1F* theJetRankGCT2Only;
+      TH2F* theEtaPhiGCT1Only;
+      TH2F* theEtaPhiGCT2Only;
 
       std::vector<TH2F*> theJetRankDifferencePerEtaBin;
 

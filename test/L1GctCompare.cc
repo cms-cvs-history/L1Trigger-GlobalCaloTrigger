@@ -3,7 +3,6 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "PhysicsTools/UtilAlgos/interface/TFileService.h"
 
-#include "DataFormats/L1GlobalCaloTrigger/interface/L1GctCollections.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctEtSums.h"
 
 //
@@ -72,70 +71,9 @@ L1GctCompare::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Handle<L1GctJetCandCollection> fJets2;
   iEvent.getByLabel(m_fJets_tag2,fJets2);
 
-  if (cJets1->size()==4 && cJets2->size()==4) { 
-    for (size_t i=0; i<4; i++) {
-      if (((*cJets1).at(i).etaIndex() == (*cJets2).at(i).etaIndex()) &&
-          ((*cJets1).at(i).etaSign()  == (*cJets2).at(i).etaSign()) &&
-          ((*cJets1).at(i).phiIndex() == (*cJets2).at(i).phiIndex())) {
-        if (((*cJets1).at(i).rank()>0) || ((*cJets2).at(i).rank()>0)) {
-          float r1 = static_cast<float>((*cJets1).at(i).rank());
-          float r2 = static_cast<float>((*cJets2).at(i).rank());
-          theJetRankComparison->Fill(r1,r2);
-          theJetRankDifference->Fill((r1-r2),r1);
-          theCenJetRankComparison->Fill(r1,r2);
-          theCenJetRankDifference->Fill((r1-r2),r1);
-          unsigned eta = (*cJets1).at(i).regionId().rctEta();
-          theJetRankDifferencePerEtaBin.at(eta)->Fill((r1-r2),r1);
-          m_jets      += 1.0;
-          m_totDiff   += (r1-r2);
-          m_totDiffSq += (r1-r2)*(r1-r2);
-        }
-      }
-    }
-  }
-
-  if (tJets1->size()==4 && tJets2->size()==4) {
-    for (size_t i=0; i<4; i++) {
-      if (((*tJets1).at(i).etaIndex() == (*tJets2).at(i).etaIndex()) &&
-          ((*tJets1).at(i).etaSign()  == (*tJets2).at(i).etaSign()) &&
-          ((*tJets1).at(i).phiIndex() == (*tJets2).at(i).phiIndex())) {
-        if (((*tJets1).at(i).rank()>0) || ((*tJets2).at(i).rank()>0)) {
-          float r1 = static_cast<float>((*tJets1).at(i).rank());
-          float r2 = static_cast<float>((*tJets2).at(i).rank());
-          theJetRankComparison->Fill(r1,r2);
-          theJetRankDifference->Fill((r1-r2),r1);
-          theTauJetRankComparison->Fill(r1,r2);
-          theTauJetRankDifference->Fill((r1-r2),r1);
-          unsigned eta = (*tJets1).at(i).regionId().rctEta();
-          theJetRankDifferencePerEtaBin.at(eta)->Fill((r1-r2),r1);
-          m_jets      += 1.0;
-          m_totDiff   += (r1-r2);
-          m_totDiffSq += (r1-r2)*(r1-r2);
-        }
-      }
-    }
-  }
-  if (fJets1->size()==4 && fJets2->size()==4) {
-    for (size_t i=0; i<4; i++) {
-      if (((*fJets1).at(i).etaIndex() == (*fJets2).at(i).etaIndex()) &&
-          ((*fJets1).at(i).etaSign()  == (*fJets2).at(i).etaSign()) &&
-          ((*fJets1).at(i).phiIndex() == (*fJets2).at(i).phiIndex())) {
-        if (((*fJets1).at(i).rank()>0) || ((*fJets2).at(i).rank()>0)) {
-          float r1 = static_cast<float>((*fJets1).at(i).rank());
-          float r2 = static_cast<float>((*fJets2).at(i).rank());
-          theJetRankComparison->Fill(r1,r2);
-          theJetRankDifference->Fill((r1-r2),r1);
-          theFwdJetRankComparison->Fill(r1,r2);
-          theFwdJetRankDifference->Fill((r1-r2),r1);
-          unsigned eta = (*fJets1).at(i).regionId().rctEta();
-          theJetRankDifferencePerEtaBin.at(eta)->Fill((r1-r2),r1);
-          m_jets      += 1.0;
-          m_totDiff   += (r1-r2);
-          m_totDiffSq += (r1-r2)*(r1-r2);
-        }
-      }
-    }
-  }
+  analyzeJets(cJets1, cJets2);
+  analyzeJets(tJets1, tJets2);
+  analyzeJets(fJets1, fJets2);
 
   // get the L1 energy sums from the event
   Handle< L1GctEtTotal > sumEt1 ;
@@ -175,6 +113,107 @@ L1GctCompare::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 }
 
+void 
+L1GctCompare::analyzeJets(const edm::Handle<L1GctJetCandCollection>& jColl1,
+                          const edm::Handle<L1GctJetCandCollection>& jColl2) {
+
+  L1GctJetCandCollection j1Matched;
+  L1GctJetCandCollection j2Matched;
+  L1GctJetCandCollection j1NonMatched;
+  L1GctJetCandCollection j2NonMatched;
+
+  L1GctJetCandCollection::const_iterator j1;
+  L1GctJetCandCollection::const_iterator j2;
+
+  static const uint16_t etaphiMask = 0x7fc0;
+
+  j1=jColl1->begin();
+  while (j1 != jColl1->end()) {
+    if (j1->rank()==0) break;
+    uint16_t pos1 = j1->raw() & etaphiMask;
+    j2=jColl2->begin();
+    bool match = false;
+    while (j2 != jColl2->end()) {
+      if (j2->rank()==0) break;
+      uint16_t pos2 = j2->raw() & etaphiMask;
+      if ( pos1==pos2 ) { match = true; break; }
+      j2++;
+    }
+    if (match) j1Matched.push_back(*j1++);
+    else j1NonMatched.push_back(*j1++);
+  }
+
+  j2=jColl2->begin();
+  while (j2 != jColl2->end()) {
+    if (j2->rank()==0) break;
+    uint16_t pos2 = j2->raw() & etaphiMask;
+    j1=jColl1->begin();
+    bool match = false;
+    while (j1 != jColl1->end()) {
+      if (j1->rank()==0) break;
+      uint16_t pos1 = j1->raw() & etaphiMask;
+      if ( pos1==pos2 ) { match = true; break; }
+      j1++;
+    }
+    if (match) j2Matched.push_back(*j2++);
+    else j2NonMatched.push_back(*j2++);
+  }
+    
+  // Now fill the histograms. First for matched pairs.
+  assert (j1Matched.size()==j2Matched.size());
+  j1 = j1Matched.begin();
+  j2 = j2Matched.begin();
+  while (j1 != j1Matched.end()) {
+    int rcteta = j1->regionId().rctEta();
+    int gcteta = (j1->etaSign()==0) ? (11 + rcteta) : (10 - rcteta);
+    int gctphi = j1->phiIndex();
+    // We have found a matched pair, fill some histograms
+    float r1 = static_cast<float>(j1->rank());
+    float r2 = static_cast<float>(j2->rank());
+    theJetRankComparison->Fill(r1,r2);
+    theJetRankDifference->Fill((r1-r2),r1);
+
+    if (j1->isCentral()) {
+      theCenJetRankComparison->Fill(r1,r2);
+      theCenJetRankDifference->Fill((r1-r2),r1);
+    }
+    if (j1->isTau()) {
+      theTauJetRankComparison->Fill(r1,r2);
+      theTauJetRankDifference->Fill((r1-r2),r1);
+    }
+    if (j1->isForward()) {
+      theFwdJetRankComparison->Fill(r1,r2);
+      theFwdJetRankDifference->Fill((r1-r2),r1);
+    }
+
+    theJetRankDifferencePerEtaBin.at(rcteta)->Fill((r1-r2),r1);
+    theEtaPhiMatchedJets->Fill(gcteta, gctphi);
+    m_jets      += 1.0;
+    m_totDiff   += (r1-r2);
+    m_totDiffSq += (r1-r2)*(r1-r2);
+
+    j1++;
+    j2++;
+  }
+  j1 = j1NonMatched.begin();
+  j2 = j2NonMatched.begin();
+  while (j1 != j1NonMatched.end()) {
+    int rcteta = j1->regionId().rctEta();
+    int gcteta = (j1->etaSign()==0) ? (11 + rcteta) : (10 - rcteta);
+    int gctphi = j1->phiIndex();
+    theJetRankGCT1Only->Fill(j1->rank());
+    theEtaPhiGCT1Only->Fill(gcteta, gctphi);
+    j1++;
+  }
+  while (j2 != j2NonMatched.end()) {
+    int rcteta = j2->regionId().rctEta();
+    int gcteta = (j2->etaSign()==0) ? (11 + rcteta) : (10 - rcteta);
+    int gctphi = j2->phiIndex();
+    theJetRankGCT2Only->Fill(j2->rank());
+    theEtaPhiGCT2Only->Fill(gcteta, gctphi);
+    j2++;
+  }
+}
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
@@ -201,6 +240,19 @@ L1GctCompare::beginJob(const edm::EventSetup&)
                                           64, 0., 64., 64, 0., 64.);
   theFwdJetRankDifference = dir.make<TH2F>("FwdJetRankDifference", "Jet Rank gct1-gct2 vs gct1",
                                           40, -20., 20., 64, 0., 64.);
+
+  theEtaPhiMatchedJets = dir.make<TH2F>("EtaPhiMatchedJets",  "Eta & phi for matched jets",
+                                              22, 0., 22., 18, 0., 18.);
+  theJetRankGCT1Only = dir.make<TH1F>("JetRankGCT1Only", "Jet Rank gct1, gct2 finds no jet",
+                                              64, 0., 64.);
+  theJetRankGCT2Only = dir.make<TH1F>("JetRankGCT2Only", "Jet Rank gct2, gct1 finds no jet",
+                                              64, 0., 64.);
+  theEtaPhiGCT1Only  = dir.make<TH2F>("EtaPhiGCT1Only",  "Eta & phi gct1, gct2 finds no jet",
+                                              22, 0., 22., 18, 0., 18.);
+  theEtaPhiGCT2Only  = dir.make<TH2F>("EtaPhiGCT2Only",  "Eta & phi gct2, gct1 finds no jet",
+                                              22, 0., 22., 18, 0., 18.);
+
+  
 
   // Comparison histograms for jet rank for each eta bin
   TFileDirectory dir1 = fs->mkdir("L1JetsPerEtaBin");
