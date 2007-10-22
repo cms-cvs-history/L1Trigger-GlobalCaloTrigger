@@ -12,6 +12,8 @@
  *
  */
  
+#include "CondFormats/L1TObjects/interface/L1GctJetCounterSetup.h"
+
 #include "DataFormats/L1CaloTrigger/interface/L1CaloRegion.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctJetCand.h"
 
@@ -58,9 +60,9 @@ private:
   //
   // FUNCTION PROTOTYPE FOR JET COUNTING
   /// Counts jets in cuts
-  unsigned countJetsInCut(const std::vector<rawJetData> &jetList,
-                          const unsigned jcnum,
-                          const unsigned Wheel, const L1GctJetEtCalibrationLut* lut) const;
+  unsigned countJetsInCut(const std::vector<rawJetData>& jetList,
+                          const L1GctJetCounterSetup::cutsListForJetCounter& cutList,
+                          const L1GctJetEtCalibrationLut* lut) const;
   //=========================================================================
 
   rawJetData rawJetFinderOutput(const L1GctJetFinderBase* jf) const;
