@@ -1,5 +1,4 @@
 
-<use name=boost>
 <use name=L1Trigger/GlobalCaloTrigger>
 <use name=root>
 <use name=PhysicsTools/UtilAlgos>
