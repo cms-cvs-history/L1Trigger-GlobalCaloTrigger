@@ -3,7 +3,10 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "PhysicsTools/UtilAlgos/interface/TFileService.h"
 
+#include "DataFormats/L1CaloTrigger/interface/L1CaloCollections.h"
 #include "DataFormats/L1GlobalCaloTrigger/interface/L1GctEtSums.h"
+
+#include <math.h>
 
 //
 // constants, enums and typedefs
@@ -17,6 +20,7 @@
 // constructors and destructor
 //
 L1GctCompare::L1GctCompare(const edm::ParameterSet& iConfig) :
+   m_rctInput_tag(iConfig.getUntrackedParameter<std::string>("L1RctEmulDigis","l1RctEmulDigis")),
    m_cJets_tag1(iConfig.getUntrackedParameter<std::string>("L1GctEmulDigi1","l1GctEmulDigis"),"cenJets"),
    m_cJets_tag2(iConfig.getUntrackedParameter<std::string>("L1GctEmulDigi2","l1GctEmulDigi2"),"cenJets"),
    m_tJets_tag1(iConfig.getUntrackedParameter<std::string>("L1GctEmulDigi1","l1GctEmulDigis"),"tauJets"),
@@ -51,6 +55,13 @@ void
 L1GctCompare::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
+
+  // Get the Rct input from the event
+  Handle<L1CaloEmCollection> inputEmCands;
+  iEvent.getByLabel(m_rctInput_tag,inputEmCands);
+  
+  Handle<L1CaloRegionCollection> inputRegions;
+  iEvent.getByLabel(m_rctInput_tag,inputRegions);
   
   // Get the L1 candidates from the event
   Handle<L1GctJetCandCollection> cJets1;
@@ -99,6 +110,30 @@ L1GctCompare::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   float etMiss2 = static_cast<float>(missEt2->et());
   float etMPhi1 = static_cast<float>(missEt1->phi());
   float etMPhi2 = static_cast<float>(missEt2->phi());
+  float etMAng1 = etMPhi1*M_PI/36.;
+  float etMAng2 = etMPhi2*M_PI/36.;
+
+  float exMissRct = 0.0;
+  float eyMissRct = 0.0;
+  std::vector<float> exRctEtaBin(22,0.0);
+  std::vector<float> eyRctEtaBin(22,0.0);
+  for (L1CaloRegionCollection::const_iterator rgn = (*inputRegions).begin();
+                                              rgn!= (*inputRegions).end(); rgn++) {
+    float etRgn = static_cast<float>(rgn->et());
+    float phBin = static_cast<float>(rgn->id().iphi());
+    float phRgn = phBin*M_PI/9.;
+    exMissRct -= etRgn*cos(phRgn);
+    eyMissRct -= etRgn*sin(phRgn);
+
+    unsigned etaBin = rgn->id().ieta();
+    exRctEtaBin.at(etaBin) -= etRgn*cos(phRgn);
+    eyRctEtaBin.at(etaBin) -= etRgn*sin(phRgn);
+  }
+  theMissEtVecRCT->Fill(exMissRct, eyMissRct);
+  for (unsigned e=0; e<22; e++) {
+    theRctExPerEtaBin.at(e)->Fill(exRctEtaBin.at(e));
+    theRctEyPerEtaBin.at(e)->Fill(eyRctEtaBin.at(e));
+  }
 
   theSumEtComparison->Fill ( etTot1,  etTot2 );
   theSumEtDifference->Fill ( etTot1 - etTot2 );
@@ -108,6 +143,10 @@ L1GctCompare::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   theMissEtDifference->Fill(etMiss1 - etMiss2);
   theMissEtPhiGCT1->Fill(etMPhi1);
   theMissEtPhiGCT2->Fill(etMPhi2);
+  theMissEtVecGCT1->Fill(etMiss1*cos(etMAng1), etMiss1*sin(etMAng1));
+  theMissEtVecGCT2->Fill(etMiss2*cos(etMAng2), etMiss2*sin(etMAng2));
+  theMETOffsetGCT1->Fill(etMiss1*cos(etMAng1)-exMissRct, etMiss1*sin(etMAng1)-eyMissRct);
+  theMETOffsetGCT2->Fill(etMiss2*cos(etMAng2)-exMissRct, etMiss2*sin(etMAng2)-eyMissRct);
 
   theSumHtRatio->Fill(etHad1/etHad2);
 
@@ -271,18 +310,45 @@ L1GctCompare::beginJob(const edm::EventSetup&)
   theSumEtComparison  = dir2.make<TH2F>("SumEtComparison",    "Total Et gct1 vs gct2",
                                        128, 0., 512., 128, 0., 512.);
   theSumHtComparison  = dir2.make<TH2F>("SumHtComparison",    "Total Ht gct1 vs gct2",
-                                       128, 0.,1024., 128, 0., 512.);
+                                       128, 0.,512., 128, 0., 512.);
   theMissEtComparison = dir2.make<TH2F>("MissEtComparison", "Missing Et gct1 vs gct2",
                                        128, 0., 256., 128, 0., 256.);
 
-  theSumEtDifference  = dir2.make<TH1F>("SumEtDifference",    "Total Et gct1-gct2", 40, -20., 20.);
-  theSumHtDifference  = dir2.make<TH1F>("SumHtDifference",    "Total Ht gct1-gct2", 40, -20., 20.);
-  theMissEtDifference = dir2.make<TH1F>("MissEtDifference", "Missing Et gct1-gct2", 40, -20., 20.);
+  theSumEtDifference  = dir2.make<TH1F>("SumEtDifference",    "Total Et gct1-gct2", 100, -50., 50.);
+  theSumHtDifference  = dir2.make<TH1F>("SumHtDifference",    "Total Ht gct1-gct2", 100, -50., 50.);
+  theMissEtDifference = dir2.make<TH1F>("MissEtDifference", "Missing Et gct1-gct2", 100, -50., 50.);
 
   theMissEtPhiGCT1 = dir2.make<TH1F>("MissEtPhiGCT1", "Missing Et angle gct1", 72, 0., 72.);
   theMissEtPhiGCT2 = dir2.make<TH1F>("MissEtPhiGCT2", "Missing Et angle gct2", 72, 0., 72.);
 
-  theSumHtRatio       = dir2.make<TH1F>("SumHtRatio",         "Total Ht gct1/gct2", 200, 0., 4.);
+  theMissEtVecRCT  = dir2.make<TH2F>("MissEtVecRCT", "Missing Et vector rct input regions",
+                                     128, -256., 256., 128, -256., 256.);
+  theMissEtVecGCT1 = dir2.make<TH2F>("MissEtVecGCT1", "Missing Et vector gct1",
+                                     128, -256., 256., 128, -256., 256.);
+  theMissEtVecGCT2 = dir2.make<TH2F>("MissEtVecGCT2", "Missing Et vector gct2",
+                                     128, -256., 256., 128, -256., 256.);
+  theMETOffsetGCT1 = dir2.make<TH2F>("METOffsetGCT1", "Missing Et gct1-rct",
+                                     100, -20., 20., 100, -20., 20.);
+  theMETOffsetGCT2 = dir2.make<TH2F>("METOffsetGCT2", "Missing Et gct2-rct",
+                                     100, -20., 20., 100, -20., 20.);
+
+  for (unsigned eta=0; eta<22; eta++) {
+    std::stringstream ss;
+    std::string title;
+    ss << "RctExEtaBin" << eta;
+    ss >> title;
+    theRctExPerEtaBin.push_back(dir2.make<TH1F>(title.c_str(), "Rct Ex single eta bin", 128, -256., 256.));
+  }
+  for (unsigned eta=0; eta<22; eta++) {
+    std::stringstream ss;
+    std::string title;
+    ss << "RctEyEtaBin" << eta;
+    ss >> title;
+    theRctEyPerEtaBin.push_back(dir2.make<TH1F>(title.c_str(), "Rct Ey single eta bin", 128, -256., 256.));
+  }
+
+
+  theSumHtRatio       = dir2.make<TH1F>("SumHtRatio",         "Total Ht gct1/gct2", 200, 0., 2.);
 }
 
 // ------------ method called once each job just after ending the event loop  ------------

@@ -11,7 +11,7 @@
 //
 // Original Author:  Gregory Heath
 //         Created:  Fri Jul 27 16:09:48 CEST 2007
-// $Id: L1GctCompare.h,v 1.1 2007/08/30 14:35:58 heath Exp $
+// $Id: L1GctCompare.h,v 1.2 2007/10/04 10:17:28 heath Exp $
 //
 //
 
@@ -52,6 +52,7 @@ class L1GctCompare : public edm::EDAnalyzer {
       void analyzeJets(const edm::Handle<L1GctJetCandCollection>& j1,
                        const edm::Handle<L1GctJetCandCollection>& j2);
 
+      edm::InputTag m_rctInput_tag;
       edm::InputTag m_cJets_tag1;
       edm::InputTag m_cJets_tag2;
       edm::InputTag m_tJets_tag1;
@@ -88,6 +89,15 @@ class L1GctCompare : public edm::EDAnalyzer {
 
       TH1F* theMissEtPhiGCT1;
       TH1F* theMissEtPhiGCT2;
+
+      TH2F* theMissEtVecRCT;
+      TH2F* theMissEtVecGCT1;
+      TH2F* theMissEtVecGCT2;
+      TH2F* theMETOffsetGCT1;
+      TH2F* theMETOffsetGCT2;
+
+      std::vector<TH1F*> theRctExPerEtaBin;
+      std::vector<TH1F*> theRctEyPerEtaBin;
 
       TH1F* theSumHtRatio;
 
