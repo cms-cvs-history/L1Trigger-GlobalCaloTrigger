@@ -4,11 +4,10 @@
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctGlobalEnergyAlgos.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetFinderBase.h"
 #include "L1Trigger/GlobalCaloTrigger/interface/L1GctWheelJetFpga.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetCounter.h"
-#include "L1Trigger/GlobalCaloTrigger/interface/L1GctJetCounterLut.h"
 
 #include <math.h>
 #include <iostream>
+#include <cassert>
 
 using namespace std;
 
@@ -127,15 +126,9 @@ bool gctTestHtAndJetCounts::checkJetCounts(const L1GlobalCaloTrigger* gct) const
   vector<unsigned> JcResult(L1GctWheelJetFpga::N_JET_COUNTERS);
 
   for (unsigned jcnum = 0 ; jcnum<L1GctWheelJetFpga::N_JET_COUNTERS ; jcnum++) {
-
-    L1GctJetCounterSetup::cutsListForJetCounter
-      cutListPos=gct->getWheelJetFpgas().at(0)->getJetCounter(jcnum)->getJetCounterLut()->cutList();
-    L1GctJetCounterSetup::cutsListForJetCounter
-      cutListNeg=gct->getWheelJetFpgas().at(1)->getJetCounter(jcnum)->getJetCounterLut()->cutList();
-
-    unsigned count0 = countJetsInCut(minusWheelJetDta, cutListNeg, myLut) ;
+    unsigned count0 = countJetsInCut(minusWheelJetDta, jcnum, 0, myLut) ;
     JcMinusWheel.at(jcnum) = count0;
-    unsigned count1 = countJetsInCut(plusWheelJetData, cutListPos, myLut) ;
+    unsigned count1 = countJetsInCut(plusWheelJetData, jcnum, 1, myLut) ;
     JcPlusWheel.at(jcnum) = count1;
     JcResult.at(jcnum) = ( (count0<7) && (count1<7) ? (count0 + count1) : 31 ) ;
   }
@@ -205,9 +198,9 @@ unsigned gctTestHtAndJetCounts::jetHtSum(const L1GctJetFinderBase* jf, const int
 // Function definition for jet count checking
 //=========================================================================
 // Does what it says ...
-unsigned gctTestHtAndJetCounts::countJetsInCut(const vector<rawJetData>& jetList,
-                                               const L1GctJetCounterSetup::cutsListForJetCounter& cutList,
-                                               const L1GctJetEtCalibrationLut* lut) const
+unsigned gctTestHtAndJetCounts::countJetsInCut(const vector<rawJetData>&jetList,
+                                               const unsigned jcnum,
+                                               const unsigned Wheel, const L1GctJetEtCalibrationLut* lut) const
 {
   unsigned count = 0;
   L1GctJetCount<3> dummy;
@@ -217,36 +210,27 @@ unsigned gctTestHtAndJetCounts::countJetsInCut(const vector<rawJetData>& jetList
   for (vector<rawJetData>::const_iterator jList=jetList.begin(); jList<jetList.end(); jList++) {
     for (RawJetsVector::const_iterator jet=jList->jets.begin(); jet<jList->jets.end(); jet++) {
       if (!jet->jetCand(lut).empty()) {
-        bool jetPassesCut = true;
-        for (L1GctJetCounterSetup::cutsListForJetCounter::const_iterator cut=cutList.begin(); cut<cutList.end(); cut++) {
-          switch (cut->cutType) {
-            case L1GctJetCounterSetup::minRank :
-              jetPassesCut &= (jet->jetCand(lut).rank() >= cut->cutValue1);
-              break;
+        bool jetPassesCut = false;
+        switch (jcnum) {
+        case (0) :
+          jetPassesCut = (jet->jetCand(lut).rank() >= 5);
+          break;
 
-            case L1GctJetCounterSetup::maxRank:
-              jetPassesCut &= (jet->jetCand(lut).rank() <= cut->cutValue1);
-              break;
+        case (1) :
+          jetPassesCut = (jet->globalEta() >=5) && (jet->globalEta() <= 16);
+          break;
 
-            case L1GctJetCounterSetup::centralEta:
-              jetPassesCut &= (jet->rctEta() <= cut->cutValue1);
-              break;
+        case (2) :
+          jetPassesCut = (jet->globalEta() < 5) && (Wheel == 0);
+          break;
 
-            case L1GctJetCounterSetup::forwardEta:
-              jetPassesCut &= (jet->rctEta() >= cut->cutValue1);
-              break;
+        case (3) :
+          jetPassesCut = (jet->globalEta() >16) && (Wheel == 1);
+          break;
 
-            case L1GctJetCounterSetup::phiWindow:
-              jetPassesCut &= (cut->cutValue2 > cut->cutValue1 ?
-                ((jet->globalPhi() >= cut->cutValue1) && (jet->globalPhi() <= cut->cutValue2)) :
-                ((jet->globalPhi() >= cut->cutValue1) || (jet->globalPhi() <= cut->cutValue2)));
-              break;
+        default :
+          break;
 
-            case L1GctJetCounterSetup::nullCutType:
-              jetPassesCut &= false;
-              break;
-
-          }
         }
         if (jetPassesCut && (count<MAX_VALUE)) { count++; }
       }
