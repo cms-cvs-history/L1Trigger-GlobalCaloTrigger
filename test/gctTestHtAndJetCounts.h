@@ -30,7 +30,6 @@ class gctTestHtAndJetCounts
 public:
 
   // structs and typedefs
-  typedef std::vector<L1CaloRegion> RegionsVector;
   typedef std::vector<L1GctJetCand> JetsVector;
   typedef std::vector<L1GctJet>     RawJetsVector;
 
