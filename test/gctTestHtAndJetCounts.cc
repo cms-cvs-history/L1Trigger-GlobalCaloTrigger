@@ -159,11 +159,11 @@ bool gctTestHtAndJetCounts::checkJetCounts(const L1GlobalCaloTrigger* gct) const
   for (unsigned int j=0 ; j<L1GctWheelJetFpga::N_JET_COUNTERS ; j++) {
     if ((myGlobalEnergy->getJetCount(j).value() != JcResult.at(j)) || 
 	(myGlobalEnergy->getJetCount(j).overFlow() ^ (JcResult.at(j)==31))) { 
-//      cout << "Algo jCount " << j << endl;
-//      cout << "Expected " << JcResult.at(j) << " found " << myGlobalEnergy->getJetCount(j) << endl;
-//      cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl;
+      cout << "Algo jCount " << j << endl;
+      cout << "Expected " << JcResult.at(j) << " found " << myGlobalEnergy->getJetCount(j) << endl;
+      cout << "PlusWheel " << myGlobalEnergy->getInputJcValPlusWheel(j) << endl;
 //      cout << *myGlobalEnergy->getPlusWheelJetFpga() << endl;
-//      cout << "MinusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl;
+      cout << "MinusWheel " << myGlobalEnergy->getInputJcVlMinusWheel(j) << endl;
 //      cout << *myGlobalEnergy->getMinusWheelJetFpga() << endl;
       testPass = false;
     }
