@@ -1,0 +1,4 @@
+module gctDigis = L1GctEmulator { 
+  InputTag inputLabel = rctDigis
+  string jetFinderType = "hardwareJetFinder"
+}

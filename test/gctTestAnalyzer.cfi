@@ -1,7 +1,7 @@
 
 module gctTest = L1GctTestAnalyzer {
   untracked InputTag rawInput = l1GctHwDigis
-  untracked InputTag emuInput = l1GctEmulDigis
+  untracked InputTag emuInput = gctDigis
   untracked string outFile = "gctAnalyzer.txt"
   untracked bool doHardware = true
   untracked bool doEmulated = true
