@@ -33,11 +33,19 @@ public:
   typedef std::vector<L1GctJetCand> JetsVector;
   typedef std::vector<L1GctJet>     RawJetsVector;
 
-  struct rawJetData { RawJetsVector jets; unsigned htSum; };
+  struct rawJetData {
+    RawJetsVector jets; unsigned htSum; 
+
+    rawJetData() : jets(), htSum(0) {}
+    rawJetData(const RawJetsVector jv, const unsigned ht) : jets(jv), htSum(ht) {}
+  };
 
   // Constructor and destructor
   gctTestHtAndJetCounts();
   ~gctTestHtAndJetCounts();
+
+  /// Set array sizes for the number of bunch crossings
+  void setBxRange(const int bxStart, const int numOfBx);
 
   /// Read the input jet data from the jetfinders (after GCT processing).
   void fillRawJetData(const L1GlobalCaloTrigger* gct);
@@ -51,20 +59,20 @@ public:
 private:
 
   //
-  // FUNCTION PROTOTYPES FOR HT SUM CHECKING
-  /// Works out the Ht for a jet from the raw input regions
-  unsigned jetHtSum(const L1GctJetFinderBase* jf, const int jn) const;
-  //=========================================================================
 
   //
   // FUNCTION PROTOTYPE FOR JET COUNTING
   /// Counts jets in cuts
   unsigned countJetsInCut(const std::vector<rawJetData>& jetList,
                           const L1GctJetCounterSetup::cutsListForJetCounter& cutList,
-                          const L1GctJetEtCalibrationLut* lut) const;
+                          const L1GctJetEtCalibrationLut* lut,
+			  const int bx) const;
   //=========================================================================
 
-  rawJetData rawJetFinderOutput(const L1GctJetFinderBase* jf) const;
+  rawJetData rawJetFinderOutput(const L1GctJetFinderBase* jf, const int bx) const;
+
+  int m_bxStart;
+  int m_numOfBx;
 
   std::vector<rawJetData> minusWheelJetDta;
   std::vector<rawJetData> plusWheelJetData;

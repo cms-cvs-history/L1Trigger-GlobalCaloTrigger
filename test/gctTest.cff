@@ -6,6 +6,8 @@ module gctemu = L1GctTest {
     untracked bool doFirmware      = false
     untracked string inputFile     = ""
     untracked string referenceFile = ""
+    uint32 preSamples = 2
+    uint32 postSamples = 2
 } 
 
 include "L1TriggerConfig/L1ScalesProducers/data/L1CaloScalesConfig.cff"
