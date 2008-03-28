@@ -1,4 +1,0 @@
-module l1GctEmulDigis = L1GctEmulator { 
-  InputTag inputLabel = l1RctEmulDigis
-  string jetFinderType = "hardwareJetFinder"
-}
