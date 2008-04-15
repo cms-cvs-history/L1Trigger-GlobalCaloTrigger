@@ -1,11 +1,12 @@
 
 
 module gctemu = L1GctTest { 
-    untracked bool doElectrons     = false
-    untracked bool doEnergyAlgos   = false
-    untracked bool doFirmware      = false
-    untracked string inputFile     = ""
-    untracked string referenceFile = ""
+    untracked bool doElectrons      = false
+    untracked bool doEnergyAlgos    = false
+    untracked bool doFirmware       = false
+    untracked string inputFile      = ""
+    untracked string referenceFile  = ""
+    untracked string energySumsFile = ""
     uint32 preSamples = 2
     uint32 postSamples = 2
 } 
