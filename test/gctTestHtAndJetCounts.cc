@@ -103,6 +103,7 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
 	leafHtSum += mJet->htSum;
 	mJet++;
       }
+      if (leafHtSum >= 4096) { leafHtSum -= 4096; }
       if (leafHtSum == gct->getJetLeafCards().at(leaf)->getAllOutputHt().at(bx).value()) {
 	htMinusVl += leafHtSum;
       } else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
@@ -116,6 +117,7 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
 	leafHtSum += pJet->htSum;
 	pJet++;
       }
+      if (leafHtSum >= 4096) { leafHtSum -= 4096; }
       if (leafHtSum == gct->getJetLeafCards().at(leaf)->getAllOutputHt().at(bx).value()) {
 	htPlusVal += leafHtSum;
       } else { cout << "Ht sum check leaf " << leaf << endl; testPass = false; }
