@@ -12,13 +12,16 @@
 //
 /// Constructor and destructor
 
-gctTestFunctions::gctTestFunctions() {
-  theElectronsTester      = new gctTestElectrons();
-  theEnergyAlgosTester    = new gctTestEnergyAlgos();
-  theFirmwareTester       = new gctTestFirmware();
-  theHtAndJetCountsTester = new gctTestHtAndJetCounts();
-  theHfEtSumsTester       = new gctTestHfEtSums();
+gctTestFunctions::gctTestFunctions() :
+  theElectronsTester      ( new gctTestElectrons() ),
+  theEnergyAlgosTester    ( new gctTestEnergyAlgos() ),
+  theFirmwareTester       ( new gctTestFirmware() ),
+  theHtAndJetCountsTester ( new gctTestHtAndJetCounts() ),
+  theHfEtSumsTester       ( new gctTestHfEtSums() ),
+  m_inputEmCands(), m_inputRegions()
+{
 }
+
 gctTestFunctions::~gctTestFunctions() {
   delete theElectronsTester;
   delete theEnergyAlgosTester;
@@ -124,3 +127,11 @@ bool gctTestFunctions::checkHfEtSums(const L1GlobalCaloTrigger* gct) const
   return theHfEtSumsTester->checkHfEtSums(gct);
 }
 
+
+//=================================================================================================================
+//
+/// Analyse calculation of energy sums in firmware
+bool gctTestFunctions::checkEnergySumsFromFirmware(const L1GlobalCaloTrigger* gct, const std::string &fileName) const
+{
+  return theFirmwareTester->checkEnergySumsFromFirmware(gct, fileName);
+}
