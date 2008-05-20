@@ -39,6 +39,7 @@ L1GctTest::L1GctTest(const edm::ParameterSet& iConfig) :
   theFirmwareTestIsEnabled   (iConfig.getUntrackedParameter<bool>("doFirmware",    false)),
   theInputDataFileName       (iConfig.getUntrackedParameter<std::string>("inputFile",     "")),
   theReferenceDataFileName   (iConfig.getUntrackedParameter<std::string>("referenceFile", "")),
+  theEnergySumsDataFileName  (iConfig.getUntrackedParameter<std::string>("energySumsFile", "")),
   m_eventNo(0), m_allGood(true)
 {
   //now do what ever initialization is needed
@@ -85,9 +86,9 @@ L1GctTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
 
-  bool endOfFile;
+   bool endOfFile=false;
 
-  configureGct(iSetup);
+   configureGct(iSetup);
 
    // Initialise the gct
    m_gct->reset();
@@ -117,6 +118,7 @@ L1GctTest::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    if (theFirmwareTestIsEnabled) {
      m_tester->fillJetsFromFirmware(theReferenceDataFileName);
      passAllTests &= m_tester->checkJetFinder(m_gct);
+     passAllTests &= m_tester->checkEnergySumsFromFirmware(m_gct, theEnergySumsDataFileName);
    }
 
    if (theEnergyAlgosTestIsEnabled || theFirmwareTestIsEnabled) {
