@@ -26,15 +26,19 @@ class L1GctJet
 
 public:
   //Statics
-  static const unsigned RAWSUM_BITWIDTH;  
+  enum numberOfBits {
+    kRawsumBitWidth = 10,
+    kRawsumMaxValue = (1<<kRawsumBitWidth) - 1
+  };
   
   //Constructors/destructors
-  L1GctJet(uint16_t rawsum=0, unsigned eta=0, unsigned phi=0, bool forwardJet=true, bool tauVeto=true);
+  L1GctJet(uint16_t rawsum=0, unsigned eta=0, unsigned phi=0, bool overFlow=false, bool forwardJet=true, bool tauVeto=true);
   ~L1GctJet();
   
   // set rawsum and position bits
-  void setRawsum(uint16_t rawsum) { m_rawsum = rawsum; }
+  void setRawsum(uint16_t rawsum) { m_rawsum = rawsum & kRawsumMaxValue; m_overFlow |= (rawsum > kRawsumMaxValue); }
   void setDetId(L1CaloRegionDetId detId) { m_id = detId; }
+  void setOverFlow(bool overFlow) { m_overFlow = overFlow; }
   void setTauVeto(bool tauVeto) { m_tauVeto = tauVeto; }
   void setForward(bool forward) { m_forwardJet = forward; }
   
@@ -43,7 +47,7 @@ public:
   bool tauVeto()const { return m_tauVeto; }
 
   /// get overflow
-  bool overFlow() const { return (m_rawsum>=(1<<RAWSUM_BITWIDTH)); }
+  bool overFlow() const { return m_overFlow ; }
 
   /// test whether this jet candidate is a valid tau jet	
   bool isTauJet()     const { return (!m_forwardJet && !m_tauVeto); } 
@@ -66,7 +70,7 @@ public:
   bool operator!= (const L1GctJet& cand) const;
   
   ///Setup an existing jet all in one go
-  void setupJet(uint16_t rawsum, unsigned eta, unsigned phi, bool forwardJet, bool tauVeto=true);
+  void setupJet(uint16_t rawsum, unsigned eta, unsigned phi, bool overFlow, bool forwardJet, bool tauVeto=true);
   
   /// eta value in global CMS coordinates
   unsigned globalEta() const { return m_id.ieta(); } 
@@ -99,6 +103,7 @@ public:
   uint16_t m_rawsum;
   /// region id, encodes eta and phi
   L1CaloRegionDetId m_id;
+  bool m_overFlow;
   bool m_forwardJet;
   bool m_tauVeto;
 
