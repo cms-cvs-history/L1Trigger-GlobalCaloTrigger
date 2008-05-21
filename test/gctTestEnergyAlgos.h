@@ -33,9 +33,6 @@ public:
   std::vector<L1CaloRegion> loadEvent(L1GlobalCaloTrigger* &gct, const bool simpleEvent);
   std::vector<L1CaloRegion> loadEvent(L1GlobalCaloTrigger* &gct, const std::string &fileName, bool &endOfFile);
 
-  /// Read the input jet data from the jetfinders (after GCT processing).
-  void fillRawJetData(const L1GlobalCaloTrigger* gct);
-
   /// Check the energy sums algorithms
   bool checkEnergySums(const L1GlobalCaloTrigger* gct) const;
 
@@ -53,8 +50,9 @@ private:
 
   //
   // FUNCTION PROTOTYPES FOR ENERGY SUM CHECKING
-  /// Integer calculation of Ex or Ey from magnitude for a given phi bin
-  int etComponent(const unsigned Emag, const unsigned fact) const;
+  /// Integer calculation of Ex or Ey from magnitude for a given pair of phi bins
+  int etComponent(const unsigned Emag0, const unsigned fact0,
+                  const unsigned Emag1, const unsigned fact1) const;
   /// Calculate et vector from ex and ey, using floating arithmetic and conversion back to integer
   etmiss_vec trueMissingEt(const int ex, const int ey) const;
   //=========================================================================
