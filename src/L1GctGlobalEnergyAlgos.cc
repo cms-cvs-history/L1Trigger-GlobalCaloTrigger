@@ -5,7 +5,6 @@
 
 #include "FWCore/Utilities/interface/Exception.h"
 
-#include <iostream>
 #include <cassert>
 
 using std::ostream;
@@ -22,6 +21,7 @@ L1GctGlobalEnergyAlgos::L1GctGlobalEnergyAlgos(vector<L1GctWheelEnergyFpga*> whe
   m_minusWheelFpga(wheelFpga.at(0)),
   m_plusWheelJetFpga(wheelJetFpga.at(1)),
   m_minusWheelJetFpga(wheelJetFpga.at(0)),
+  m_metComponents(),
   m_jcValPlusWheel(N_JET_COUNTERS_USED),
   m_jcVlMinusWheel(N_JET_COUNTERS_USED),
   m_outputJetCounts(N_JET_COUNTERS_MAX)
@@ -154,16 +154,17 @@ void L1GctGlobalEnergyAlgos::fetchInput() {
 // process the event
 void L1GctGlobalEnergyAlgos::process()
 {
-  L1GctGlobalEnergyAlgos::etComponentType ExSum, EySum;
-  L1GctGlobalEnergyAlgos::etmiss_vec EtMissing;
-
+  etComponentType ExSum, EySum;
+  etmiss_vec EtMissing;
   //
   //-----------------------------------------------------------------------------
   // Form the Ex and Ey sums
   ExSum = m_exValPlusWheel + m_exVlMinusWheel;
   EySum = m_eyValPlusWheel + m_eyVlMinusWheel;
   // Execute the missing Et algorithm
-  EtMissing = calculate_etmiss_vec(-ExSum, -EySum);
+  m_metComponents.setComponents(-ExSum, -EySum);
+  EtMissing = m_metComponents.metVector();
+
   //
   m_outputEtMiss    = EtMissing.mag;
   m_outputEtMissPhi = EtMissing.phi;
@@ -263,98 +264,6 @@ void L1GctGlobalEnergyAlgos::setInputWheelJc(unsigned wheel, unsigned jcnum, uns
       m_jcVlMinusWheel.at(jcnum).setValue(count);
     }
   }
-}
-
-
-//----------------------------------------------------------------------------------------------
-//
-// PRIVATE MEMBER FUNCTION
-//
-// Here's the Etmiss calculation
-//
-//-----------------------------------------------------------------------------------
-L1GctGlobalEnergyAlgos::etmiss_vec
-L1GctGlobalEnergyAlgos::calculate_etmiss_vec (const L1GctGlobalEnergyAlgos::etComponentType ex,
-                                              const L1GctGlobalEnergyAlgos::etComponentType ey) const
-{
-  //---------------------------------------------------------------------------------
-  //
-  // Calculates magnitude and direction of missing Et, given measured Ex and Ey.
-  //
-  // The algorithm used is suitable for implementation in hardware, using integer
-  // multiplication, addition and comparison and bit shifting operations.
-  //
-  // Proceed in two stages. The first stage gives a result that lies between
-  // 92% and 100% of the true Et, with the direction measured in 45 degree bins.
-  // The final precision depends on the number of factors used in corrFact.
-  // The present version with eleven factors gives a precision of 1% on Et, and
-  // finds the direction to the nearest 5 degrees.
-  //
-  //---------------------------------------------------------------------------------
-  etmiss_vec result;
-
-  unsigned eneCoarse, phiCoarse;
-  unsigned eneCorect, phiCorect;
-
-  const unsigned root2fact = 181;
-  const unsigned corrFact[11] = {24, 39, 51, 60, 69, 77, 83, 89, 95, 101, 106};
-  const unsigned corrDphi[11] = { 0,  1,  1,  2,  2,  3,  3,  3,  3,   4,   4};
-
-  vector<bool> s(3);
-  unsigned Mx, My, Mw;
-
-  unsigned Dx, Dy;
-  unsigned eFact;
-
-  unsigned b,phibin;
-  bool midphi=false;
-
-  // Here's the coarse calculation, with just one multiply operation
-  //
-  My = static_cast<unsigned>(abs(ey.value()));
-  Mx = static_cast<unsigned>(abs(ex.value()));
-  Mw = (((Mx+My)*root2fact)+0x80)>>8;
-
-  s.at(0) = (ey.value()<0);
-  s.at(1) = (ex.value()<0);
-  s.at(2) = (My>Mx);
-
-  phibin = 0; b = 0;
-  for (int i=0; i<3; i++) {
-    if (s.at(i)) { b=1-b;} phibin = 2*phibin + b;
-  }
-
-  eneCoarse = max(max(Mx, My), Mw);
-  phiCoarse = phibin*9;
-
-  // For the fine calculation we multiply both input components
-  // by all the factors in the corrFact list in order to find
-  // the required corrections to the energy and angle
-  //
-  for (eFact=0; eFact<10; eFact++) {
-    Dx = (Mx*corrFact[eFact])>>8;
-    Dy = (My*corrFact[eFact])>>8;
-    if         ((Dx>=My) || (Dy>=Mx))         {midphi=false; break;}
-    if ((Mx+Dx)>=(My-Dy) && (My+Dy)>=(Mx-Dx)) {midphi=true;  break;}
-  }
-  //eneCorect = (eneCoarse*(128+eFact))>>7;
-  eneCorect = (eneCoarse*(128+eFact))>>8;
-  if (midphi ^ (b==1)) {
-    phiCorect = phiCoarse + 8 - corrDphi[eFact];
-  } else {
-    phiCorect = phiCoarse + corrDphi[eFact];
-  }
-  // Compensate for offset introduced in jetLeafCard
-  //phiCorect = (phiCorect+1)%72;
-
-  // Store the result of the calculation
-  //
-  result.mag.setValue(eneCorect);
-  result.phi.setValue(phiCorect);
-
-  result.mag.setOverFlow( result.mag.overFlow() || ex.overFlow() || ey.overFlow() );
-
-  return result;
 }
 
 //----------------------------------------------------------------------------------
