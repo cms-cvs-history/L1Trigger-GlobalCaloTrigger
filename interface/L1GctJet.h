@@ -28,19 +28,18 @@ public:
   //Statics
   enum numberOfBits {
     kRawsumBitWidth = 10,
-    kRawsumOFlowBit = 1 << kRawsumBitWidth,
-    kRawsumMaxValue = kRawsumOFlowBit - 1,
-    kRawsumBitMask  = kRawsumMaxValue | kRawsumOFlowBit
+    kRawsumMaxValue = (1<<kRawsumBitWidth) - 1
   };
   
   //Constructors/destructors
-  L1GctJet(const uint16_t rawsum=0, const unsigned eta=0, const unsigned phi=0,
+  L1GctJet(const uint16_t rawsum=0, const unsigned eta=0, const unsigned phi=0, const bool overFlow=false,
            const bool forwardJet=true, const bool tauVeto=true, const int16_t bx=0);
   ~L1GctJet();
   
   // set rawsum and position bits
-  void setRawsum(const uint16_t rawsum) { m_rawsum = rawsum & kRawsumBitMask; }
+  void setRawsum(const uint16_t rawsum) { m_rawsum = rawsum & kRawsumMaxValue; m_overFlow |= (rawsum > kRawsumMaxValue); }
   void setDetId(const L1CaloRegionDetId detId) { m_id = detId; }
+  void setOverFlow(const bool overFlow) { m_overFlow = overFlow; }
   void setTauVeto(const bool tauVeto) { m_tauVeto = tauVeto; }
   void setForward(const bool forward) { m_forwardJet = forward; }
   void setBx(const int16_t bx) { m_bx = bx; }
@@ -50,7 +49,7 @@ public:
   bool tauVeto()const { return m_tauVeto; }
 
   /// get overflow
-  bool overFlow() const { return ( (m_rawsum & kRawsumOFlowBit) != 0 ); }
+  bool overFlow() const { return m_overFlow; }
 
   /// test whether this jet candidate is a valid tau jet	
   bool isTauJet()     const { return (!m_forwardJet && !m_tauVeto); } 
@@ -73,7 +72,7 @@ public:
   bool operator!= (const L1GctJet& cand) const;
   
   ///Setup an existing jet all in one go
-  void setupJet(const uint16_t rawsum, const unsigned eta, const unsigned phi,
+  void setupJet(const uint16_t rawsum, const unsigned eta, const unsigned phi, const bool overFlow,
                 const bool forwardJet, const bool tauVeto=true, const int16_t bx=0);
   
   /// eta value in global CMS coordinates
@@ -110,6 +109,7 @@ public:
   uint16_t m_rawsum;
   /// region id, encodes eta and phi
   L1CaloRegionDetId m_id;
+  bool m_overFlow;
   bool m_forwardJet;
   bool m_tauVeto;
   int16_t m_bx;
