@@ -11,7 +11,11 @@ module gctemu = L1GctTest {
     uint32 postSamples = 2
 } 
 
-include "L1TriggerConfig/L1ScalesProducers/data/L1CaloScalesConfig.cff"
+# Setup the configuration for the GCT emulator
+# The following line should work but has given problems in the muon trigger
+#include "L1Trigger/Configuration/data/L1DummyConfig.cff"
 
+# ... so instead, we choose just the .cff files relevant to the GCT
 include "L1TriggerConfig/GctConfigProducers/data/L1GctConfig.cff"
-
+include "L1TriggerConfig/L1ScalesProducers/data/L1CaloScalesConfig.cff"
+include "L1TriggerConfig/L1GeometryProducers/data/l1CaloGeomConfig.cff"
