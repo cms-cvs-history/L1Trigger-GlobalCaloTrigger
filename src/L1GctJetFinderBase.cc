@@ -176,7 +176,8 @@ void L1GctJetFinderBase::setInputRegion(const L1CaloRegion& region)
     // Now check we are in the right wheel (positive or negative eta)
     if ( (crate/N_JF_PER_WHEEL) == (m_id/N_JF_PER_WHEEL) ) {
       unsigned i = colRelative*COL_OFFSET + region.rctEta() + 1;
-      m_inputRegions.at(i) = region;
+      L1GctRegion temp(region);
+      m_inputRegions.at(i) = temp;
     } else {
       // Accept neighbouring regions from the other wheel
       if (region.rctEta() == 0) {
@@ -308,8 +309,12 @@ L1GctJetFinderBase::hfTowerSumsType L1GctJetFinderBase::calcHfSums() const
       of.at(i) = of.at(i) || m_inputRegions.at(offset+COL_OFFSET).overFlow();
     }
     // Count fine grain bits over the whole HF
-    if (m_inputRegions.at(offset).fineGrain()) nt++;
-    if (m_inputRegions.at(offset+COL_OFFSET).fineGrain()) nt++;
+    //+++ Temporary change - only count the fine grain bits for the inner ring
+    if (i==0) {
+      if (m_inputRegions.at(offset).fineGrain()) nt++;
+      if (m_inputRegions.at(offset+COL_OFFSET).fineGrain()) nt++;
+    }
+    //+++ 
   }
   hfTowerSumsType temp(et.at(0), et.at(1), nt);
   temp.etSum0.setOverFlow(temp.etSum0.overFlow() || of.at(0));
