@@ -34,10 +34,12 @@ public:
   typedef std::vector<L1GctJet>     RawJetsVector;
 
   struct rawJetData {
-    RawJetsVector jets; unsigned htSum; 
+    RawJetsVector jets; unsigned htStripSum0; unsigned htStripSum1; bool htOverFlow;
 
-    rawJetData() : jets(), htSum(0) {}
-    rawJetData(const RawJetsVector jv, const unsigned ht) : jets(jv), htSum(ht) {}
+    rawJetData() :
+      jets(), htStripSum0(0), htStripSum1(0), htOverFlow(false) {}
+    rawJetData(const RawJetsVector jv, const unsigned ht0, const unsigned ht1, const bool of) : 
+      jets(jv), htStripSum0(ht0), htStripSum1(ht1), htOverFlow(of) {}
   };
 
   // Constructor and destructor
@@ -77,6 +79,8 @@ private:
   std::vector<rawJetData> minusWheelJetDta;
   std::vector<rawJetData> plusWheelJetData;
 
+  int etComponent(const unsigned Emag0, const unsigned fact0,
+		  const unsigned Emag1, const unsigned fact1) const;
 };
 
 #endif /*GCTTEST_H_*/
