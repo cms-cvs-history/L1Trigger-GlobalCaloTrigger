@@ -33,6 +33,9 @@ public:
   typedef std::vector<L1GctJetCand> JetsVector;
   typedef std::vector<L1GctJet>     RawJetsVector;
 
+  typedef L1GctJet::lutPtr lutPtr;
+  typedef std::vector<lutPtr> lutPtrVector;
+
   struct rawJetData {
     RawJetsVector jets; unsigned htStripSum0; unsigned htStripSum1; bool htOverFlow;
 
@@ -67,7 +70,7 @@ private:
   /// Counts jets in cuts
   unsigned countJetsInCut(const std::vector<rawJetData>& jetList,
                           const L1GctJetCounterSetup::cutsListForJetCounter& cutList,
-                          const L1GctJetEtCalibrationLut* lut,
+                          const lutPtrVector& luts,
 			  const int bx) const;
   //=========================================================================
 

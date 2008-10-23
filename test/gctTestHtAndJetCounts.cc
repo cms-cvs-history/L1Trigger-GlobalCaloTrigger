@@ -266,7 +266,7 @@ bool gctTestHtAndJetCounts::checkJetCounts(const L1GlobalCaloTrigger* gct) const
 {
   bool testPass = true;
   L1GctGlobalEnergyAlgos* myGlobalEnergy = gct->getEnergyFinalStage();
-  const L1GctJetEtCalibrationLut* myLut = gct->getJetEtCalibLut();
+  const lutPtrVector myLuts = gct->getJetEtCalibLuts();
 
   int bx = m_bxStart;
   for (int ibx=0; ibx<m_numOfBx; ibx++) {
@@ -285,9 +285,9 @@ bool gctTestHtAndJetCounts::checkJetCounts(const L1GlobalCaloTrigger* gct) const
       L1GctJetCounterSetup::cutsListForJetCounter
 	cutListNeg=gct->getWheelJetFpgas().at(1)->getJetCounter(jcnum)->getJetCounterLut()->cutList();
 
-      unsigned count0 = countJetsInCut(minusWheelJetDta, cutListNeg, myLut, bx) ;
+      unsigned count0 = countJetsInCut(minusWheelJetDta, cutListNeg, myLuts, bx) ;
       JcMinusWheel.at(jcnum) = count0;
-      unsigned count1 = countJetsInCut(plusWheelJetData, cutListPos, myLut, bx) ;
+      unsigned count1 = countJetsInCut(plusWheelJetData, cutListPos, myLuts, bx) ;
       JcPlusWheel.at(jcnum) = count1;
       JcResult.at(jcnum) = ( (count0<7) && (count1<7) ? (count0 + count1) : 31 ) ;
     }
@@ -331,6 +331,7 @@ bool gctTestHtAndJetCounts::checkJetCounts(const L1GlobalCaloTrigger* gct) const
 //
 gctTestHtAndJetCounts::rawJetData gctTestHtAndJetCounts::rawJetFinderOutput(const L1GctJetFinderBase* jf, const int bx) const
 {
+  lutPtrVector  lutsFromJf = jf->getJetEtCalLuts();
   RawJetsVector jetsFromJf = jf->getRawJets();
   RawJetsVector jetList;
   unsigned sumHtStrip0 = 0;
@@ -344,11 +345,12 @@ gctTestHtAndJetCounts::rawJetData gctTestHtAndJetCounts::rawJetFinderOutput(cons
 // 	   << (jet->overFlow() ? " overflow set " : " ") 
 //  	   << " bx " << jet->bx() << endl;
       jetList.push_back(*jet);
+      unsigned etaBin = jet->rctEta();
       if (jet->rctPhi() == 0) {
-	sumHtStrip0 += jet->calibratedEt(jf->getJetEtCalLut());
+	sumHtStrip0 += jet->calibratedEt(lutsFromJf.at(etaBin));
       }
       if (jet->rctPhi() == 1) {
-	sumHtStrip1 += jet->calibratedEt(jf->getJetEtCalLut());
+	sumHtStrip1 += jet->calibratedEt(lutsFromJf.at(etaBin));
       }
       sumHtOvrFlo |= (jet->overFlow());
     }
@@ -363,7 +365,7 @@ gctTestHtAndJetCounts::rawJetData gctTestHtAndJetCounts::rawJetFinderOutput(cons
 // Does what it says ...
 unsigned gctTestHtAndJetCounts::countJetsInCut(const vector<rawJetData>& jetList,
                                                const L1GctJetCounterSetup::cutsListForJetCounter& cutList,
-                                               const L1GctJetEtCalibrationLut* lut,
+					       const lutPtrVector& luts,
 					       const int bx) const
 {
   unsigned count = 0;
@@ -373,16 +375,16 @@ unsigned gctTestHtAndJetCounts::countJetsInCut(const vector<rawJetData>& jetList
   // Loop over all jets in all jetFinders in a wheel
   for (vector<rawJetData>::const_iterator jList=jetList.begin(); jList<jetList.end(); jList++) {
     for (RawJetsVector::const_iterator jet=jList->jets.begin(); jet<jList->jets.end(); jet++) {
-      if (jet->bx()==bx && !jet->jetCand(lut).empty()) {
+      if (jet->bx()==bx && !jet->jetCand(luts).empty()) {
         bool jetPassesCut = true;
         for (L1GctJetCounterSetup::cutsListForJetCounter::const_iterator cut=cutList.begin(); cut<cutList.end(); cut++) {
           switch (cut->cutType) {
             case L1GctJetCounterSetup::minRank :
-              jetPassesCut &= (jet->jetCand(lut).rank() >= cut->cutValue1);
+              jetPassesCut &= (jet->jetCand(luts).rank() >= cut->cutValue1);
               break;
 
             case L1GctJetCounterSetup::maxRank:
-              jetPassesCut &= (jet->jetCand(lut).rank() <= cut->cutValue1);
+              jetPassesCut &= (jet->jetCand(luts).rank() <= cut->cutValue1);
               break;
 
             case L1GctJetCounterSetup::centralEta:
