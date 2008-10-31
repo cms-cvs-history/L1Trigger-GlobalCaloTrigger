@@ -96,7 +96,7 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
     bool htMinusInputOf = false;
     bool htPlusInputOvf = false;
 
-    unsigned fRotX0 = 17;
+    unsigned fRotX0 = 21;
     //
     // Check the Ht calculation (starting from the found jets)
     //--------------------------------------------------------------------------------------
