@@ -83,6 +83,8 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
   bool testPass = true;
   L1GctGlobalEnergyAlgos* myGlobalEnergy = gct->getEnergyFinalStage();
 
+  L1GctInternJetDataCollection internalJets = gct->getInternalJets();
+
   std::vector<rawJetData>::const_iterator mJet=minusWheelJetDta.begin();
   std::vector<rawJetData>::const_iterator pJet=plusWheelJetData.begin();
 
@@ -179,7 +181,13 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
 
     bool htMinusOvrFlow = (htMinusVl>=4096) || htMinusInputOf;
     bool htPlusOverFlow = (htPlusVal>=4096) || htPlusInputOvf;
+
+    htMinusVl = htMinusVl%4096;
+    htPlusVal = htPlusVal%4096;
+
     bool htTotalOvrFlow = (htTotal>=4096) || htMinusOvrFlow  || htPlusOverFlow;
+
+    htTotal = htTotal%4096;
 
     int hxTotal = hxMinusVl + hxPlusVal;
     int hyTotal = hyMinusVl + hyPlusVal;
@@ -192,9 +200,20 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
       cout << "ht Minus " << htMinusVl <<endl; 
       testPass = false; 
     }
+
+    if (myGlobalEnergy->getInputHtVlMinusWheel().at(bx).value()!=htMinusVl) { 
+      cout << "ht Minus ovF " << htMinusVl << " found " << myGlobalEnergy->getInputHtVlMinusWheel().at(bx) <<endl; 
+      testPass = false; 
+    }
+
     if (!myGlobalEnergy->getInputHtValPlusWheel().at(bx).overFlow() && !htPlusOverFlow &&
 	(myGlobalEnergy->getInputHtValPlusWheel().at(bx).value()!=htPlusVal)) { 
       cout << "ht Plus " << htPlusVal <<endl; 
+      testPass = false; 
+    }
+
+    if (myGlobalEnergy->getInputHtValPlusWheel().at(bx).value()!=htPlusVal) { 
+      cout << "ht Plus ovF " << htPlusVal << " found " << myGlobalEnergy->getInputHtValPlusWheel().at(bx) <<endl; 
       testPass = false; 
     }
 
@@ -232,6 +251,11 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
       testPass = false;
     }
 
+    if (myGlobalEnergy->getEtHadColl().at(bx).value() != htTotal) {
+      cout << "Algo etHad ovf" << " found " << myGlobalEnergy->getEtHadColl().at(bx) << endl; 
+      testPass = false;
+    }
+
     // Check the missing Ht calculation
     double dhx = static_cast<double>(-hxTotal);
     double dhy = static_cast<double>(-hyTotal);
@@ -253,6 +277,18 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
       testPass = false;
     }
 
+    // Check the storage of internal jet candidates
+    unsigned htFromInternalJets = 0;
+    for (L1GctInternJetDataCollection::const_iterator jet=internalJets.begin();
+	 jet != internalJets.end(); jet++) {
+      if (jet->bx() == bx+m_bxStart) {
+	htFromInternalJets += jet->et();
+      }
+    }
+    if (htFromInternalJets%4096 != htTotal) {
+      cout << "Found ht from jets " << htFromInternalJets << " expected " << htTotal << endl;
+      testPass = false;
+    }
 
     // end of loop over bunch crossings
   }
