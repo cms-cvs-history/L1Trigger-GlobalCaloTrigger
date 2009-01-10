@@ -1,3 +1,0 @@
-module l1GctValidation = L1GctValidation {
-  untracked InputTag inputTag = gctDigis
-}
