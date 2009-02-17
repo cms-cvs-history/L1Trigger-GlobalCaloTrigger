@@ -98,7 +98,7 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
     bool htMinusInputOf = false;
     bool htPlusInputOvf = false;
 
-    unsigned fRotX0 = 21;
+    unsigned fRotX0 = 17;
     //
     // Check the Ht calculation (starting from the found jets)
     //--------------------------------------------------------------------------------------
@@ -116,9 +116,9 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
 	leafHtSum += (mJet->htStripSum0 + mJet->htStripSum1); 
 	leafHtOvf |= (mJet->htOverFlow);
 
-        unsigned fRotX1 = (fRotX0+34) % 36;
+        unsigned fRotX1 = (fRotX0+ 6) % 36;
         unsigned fRotY0 = (fRotX0+27) % 36;
-        unsigned fRotY1 = (fRotX0+25) % 36;
+        unsigned fRotY1 = (fRotX0+33) % 36;
 	leafHxSum += etComponent(mJet->htStripSum0, fRotX0, mJet->htStripSum1, fRotX1); 
 	leafHySum += etComponent(mJet->htStripSum0, fRotY0, mJet->htStripSum1, fRotY1); 
 	fRotX0 = (fRotX0+32) % 36;
@@ -152,9 +152,9 @@ bool gctTestHtAndJetCounts::checkHtSums(const L1GlobalCaloTrigger* gct) const
 	leafHtSum += (pJet->htStripSum0 + pJet->htStripSum1);
 	leafHtOvf |= (pJet->htOverFlow);
 
-        unsigned fRotX1 = (fRotX0+34) % 36;
+        unsigned fRotX1 = (fRotX0+ 6) % 36;
         unsigned fRotY0 = (fRotX0+27) % 36;
-        unsigned fRotY1 = (fRotX0+25) % 36;
+        unsigned fRotY1 = (fRotX0+33) % 36;
 	leafHxSum += etComponent(pJet->htStripSum0, fRotX0, pJet->htStripSum1, fRotX1); 
 	leafHySum += etComponent(pJet->htStripSum0, fRotY0, pJet->htStripSum1, fRotY1); 
 	fRotX0 = (fRotX0+32) % 36;
