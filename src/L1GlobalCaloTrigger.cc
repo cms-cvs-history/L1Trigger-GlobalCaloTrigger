@@ -331,6 +331,16 @@ void L1GlobalCaloTrigger::setJetEtCalibrationLuts(const L1GlobalCaloTrigger::lut
   }
 }
 
+/// HACK - Ht threshold value for CMSSW22X
+void L1GlobalCaloTrigger::setJetThresholdForHtSum(const unsigned thresh) {
+  // Need to propagate the new value to all the JetFinders
+  for (int i=0; i<N_JET_LEAF_CARDS; i++) {
+    theJetLeafCards.at(i)->getJetFinderA()->setJetThresholdForHtSum(thresh);
+    theJetLeafCards.at(i)->getJetFinderB()->setJetThresholdForHtSum(thresh);
+    theJetLeafCards.at(i)->getJetFinderC()->setJetThresholdForHtSum(thresh);
+  }
+}
+
 /// setup Jet Counter LUTs
 void L1GlobalCaloTrigger::setupJetCounterLuts(const L1GctJetCounterSetup* jcPosPars,
                                               const L1GctJetCounterSetup* jcNegPars) {

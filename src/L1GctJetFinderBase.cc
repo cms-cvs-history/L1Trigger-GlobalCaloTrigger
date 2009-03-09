@@ -28,6 +28,7 @@ L1GctJetFinderBase::L1GctJetFinderBase(int id):
   m_gotJetEtCalLuts(false),
   m_CenJetSeed(0), m_FwdJetSeed(0), m_TauJetSeed(0), m_EtaBoundry(0),
   m_jetEtCalLuts(),
+  m_JetThresholdForHtSum(0),
   m_inputRegions(MAX_REGIONS_IN),
   m_sentProtoJets(MAX_JETS_OUT), m_rcvdProtoJets(MAX_JETS_OUT), m_keptProtoJets(MAX_JETS_OUT),
   m_outputJets(MAX_JETS_OUT), m_sortedJets(MAX_JETS_OUT),
@@ -104,6 +105,11 @@ void L1GctJetFinderBase::setJetEtCalibrationLuts(const L1GctJetFinderBase::lutPt
 {
   m_jetEtCalLuts = jfluts;
   m_gotJetEtCalLuts = (jfluts.size() >= COL_OFFSET);
+}
+
+/// HACK - Ht threshold value for CMSSW22X
+void L1GctJetFinderBase::setJetThresholdForHtSum(const unsigned thresh) {
+  m_JetThresholdForHtSum = thresh;
 }
 
 std::ostream& operator << (std::ostream& os, const L1GctJetFinderBase& algo)
@@ -314,7 +320,10 @@ L1GctJetFinderBase::etTotalType L1GctJetFinderBase::calcHtStrip(const UShort str
     if (!m_outputJets.at(i).isNullJet()) {
       if (m_outputJets.at(i).rctPhi() == strip) {
 	unsigned ieta = m_outputJets.at(i).rctEta();
-	ht += m_outputJets.at(i).calibratedEt(m_jetEtCalLuts.at(ieta));
+	unsigned htJet = m_outputJets.at(i).calibratedEt(m_jetEtCalLuts.at(ieta));
+	if (htJet >= m_JetThresholdForHtSum) {
+	  ht += htJet;
+	} 
 	of |= m_outputJets.at(i).overFlow();
       }
     }

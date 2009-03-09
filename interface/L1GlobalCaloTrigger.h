@@ -84,6 +84,9 @@ public:
   /// setup the Jet Calibration Luts
   void setJetEtCalibrationLuts(const lutPtrVector& jfluts);
 
+  /// HACK - Ht threshold value for CMSSW22X
+  void setJetThresholdForHtSum(const unsigned thresh);
+
   /// setup Jet Counter LUTs
   void setupJetCounterLuts(const L1GctJetCounterSetup* jcPosPars,
                            const L1GctJetCounterSetup* jcNegPars);

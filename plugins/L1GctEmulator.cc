@@ -16,11 +16,13 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 // Trigger configuration includes
+#include "CondFormats/L1TObjects/interface/L1CaloEtScale.h"
 #include "CondFormats/L1TObjects/interface/L1GctJetFinderParams.h"
 #include "CondFormats/L1TObjects/interface/L1GctJetEtCalibrationFunction.h"
 #include "CondFormats/L1TObjects/interface/L1GctJetCounterSetup.h"
 #include "CondFormats/L1TObjects/interface/L1GctChannelMask.h"
 #include "CondFormats/L1TObjects/interface/L1GctHfLutSetup.h"
+#include "CondFormats/DataRecord/interface/L1JetEtScaleRcd.h"
 #include "CondFormats/DataRecord/interface/L1GctJetFinderParamsRcd.h"
 #include "CondFormats/DataRecord/interface/L1GctJetCalibFunRcd.h"
 #include "CondFormats/DataRecord/interface/L1GctJetCounterPositiveEtaRcd.h"
@@ -41,6 +43,7 @@ using std::vector;
 
 L1GctEmulator::L1GctEmulator(const edm::ParameterSet& ps) :
   m_jetEtCalibLuts(),
+  m_JetThresholdForHtSumGeV(ps.getParameter<double>("jetThresholdForHtSumGeV")),
   m_verbose(ps.getUntrackedParameter<bool>("verbose", false))
  {
 
@@ -182,6 +185,15 @@ int L1GctEmulator::configureGct(const edm::EventSetup& c)
       m_gct->setupJetCounterLuts(jcPosPars.product(), jcNegPars.product());
       m_gct->setupHfSumLuts(hfLSetup.product());
       m_gct->setChannelMask(chanMask.product());
+
+      // HACK - Ht threshold value for CMSSW22X
+
+      unsigned jetThresholdForHtSumGct = ( m_JetThresholdForHtSumGeV > 0.0 ?
+					   static_cast<unsigned> ( m_JetThresholdForHtSumGeV/calibFun->getHtScaleLSB() ) :
+					   0 );
+      m_gct->setJetThresholdForHtSum(jetThresholdForHtSumGct);
+
+      // HACK END
     }
   }
 
