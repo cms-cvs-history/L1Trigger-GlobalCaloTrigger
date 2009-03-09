@@ -84,6 +84,9 @@ public:
   /// setup the Jet Calibration Luts
   void setJetEtCalibrationLuts(const lutPtrVector& jfluts);
 
+  /// HACK - Ht threshold value for CMSSW22X
+  void setJetThresholdForHtSum(const unsigned thresh);
+
   /// setup Jet Counter LUTs
   void setupJetCounterLuts(const L1GctJetCounterSetup* jcPosPars,
                            const L1GctJetCounterSetup* jcNegPars);
@@ -202,6 +205,9 @@ public:
   /// get the Jet Et calibration LUT
   const lutPtrVector getJetEtCalibLuts() const { return m_jetEtCalLuts; }
 
+  /// HACK - Ht threshold value for CMSSW22X
+  const unsigned getJetThresholdForHtSum() const { return m_JetThresholdForHtSum; }
+
   ///=================================================================================================
   /// Print method
   ///
@@ -287,6 +293,9 @@ public:
 
   /// Jet Et calibration LUT
   lutPtrVector m_jetEtCalLuts;
+
+  // HACK - Ht threshold value for CMSSW22X
+  unsigned m_JetThresholdForHtSum;
 
   /// Input channel mask
   const L1GctChannelMask* m_inputChannelMask;

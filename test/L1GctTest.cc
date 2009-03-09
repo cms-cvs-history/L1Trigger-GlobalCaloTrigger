@@ -43,6 +43,7 @@ L1GctTest::L1GctTest(const edm::ParameterSet& iConfig) :
   theEnergySumsDataFileName  (iConfig.getUntrackedParameter<std::string>("energySumsFile", "")),
   m_firstBx (-iConfig.getParameter<unsigned>("preSamples")),
   m_lastBx  ( iConfig.getParameter<unsigned>("postSamples")),
+  m_JetThresholdForHtSumGeV(iConfig.getParameter<double>("jetThresholdForHtSumGeV")),
   m_eventNo(0), m_allGood(true)
 {
   //now do what ever initialization is needed
@@ -220,5 +221,14 @@ L1GctTest::configureGct(const edm::EventSetup& c)
   m_gct->setupJetCounterLuts(jcPosPars.product(), jcNegPars.product());
   m_gct->setupHfSumLuts(hfLSetup.product());
   m_gct->setChannelMask(chanMask.product());
+
+      // HACK - Ht threshold value for CMSSW22X
+
+      unsigned jetThresholdForHtSumGct = ( m_JetThresholdForHtSumGeV > 0.0 ?
+					   static_cast<unsigned> ( m_JetThresholdForHtSumGeV/calibFun->getHtScaleLSB() ) :
+					   0 );
+      m_gct->setJetThresholdForHtSum(jetThresholdForHtSumGct);
+
+      // HACK END
 }
 

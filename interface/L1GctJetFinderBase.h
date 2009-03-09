@@ -123,6 +123,9 @@ public:
   /// Set pointer to calibration Lut - needed to complete the setup
   void setJetEtCalibrationLuts(const lutPtrVector& jfluts);
 
+  /// HACK - Ht threshold value for CMSSW22X
+  void setJetThresholdForHtSum(const unsigned thresh);
+
   /// Check setup is Ok
   bool setupOk() const { return m_idInRange
 			   && m_gotNeighbourPointers
@@ -158,6 +161,9 @@ public:
 
   /// Return pointers to calibration LUTs
   const lutPtrVector getJetEtCalLuts() const { return m_jetEtCalLuts; }
+
+  /// HACK - Ht threshold value for CMSSW22X
+  const unsigned getJetThresholdForHtSum() const { return m_JetThresholdForHtSum; }
 
   // The hardware output quantities
   JetVector getJets() const { return m_sortedJets; } ///< Get the located jets. 
@@ -209,6 +215,9 @@ public:
   /// Jet Et Conversion LUT pointer
   lutPtrVector m_jetEtCalLuts;
     
+  // HACK - Ht threshold value for CMSSW22X
+  unsigned m_JetThresholdForHtSum;
+
   /// input data required for jet finding
   RegionsVector m_inputRegions;
 
